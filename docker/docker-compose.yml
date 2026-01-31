@@ -1,0 +1,100 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: teacher-transfer-api
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - DATABASE_URL=jdbc:postgresql://db:5432/teachertransfer
+      - DATABASE_USERNAME=teachertransfer
+      - DATABASE_PASSWORD=${DB_PASSWORD:-teacherpass}
+      - JWT_SECRET=${JWT_SECRET:-change-this-in-production-minimum-32-characters}
+      - MSG91_AUTH_KEY=${MSG91_AUTH_KEY}
+      - MSG91_SENDER_ID=${MSG91_SENDER_ID:-TCHTRN}
+      - MSG91_TEMPLATE_ID=${MSG91_TEMPLATE_ID}
+      - RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID}
+      - RAZORPAY_KEY_SECRET=${RAZORPAY_KEY_SECRET}
+      - RAZORPAY_WEBHOOK_SECRET=${RAZORPAY_WEBHOOK_SECRET}
+      - SENDGRID_API_KEY=${SENDGRID_API_KEY}
+      - SENDGRID_FROM_EMAIL=${SENDGRID_FROM_EMAIL:-noreply@teachertransfer.in}
+      - SENDGRID_FROM_NAME=${SENDGRID_FROM_NAME:-TeacherTransfer}
+      - APP_NAME=${APP_NAME:-TeacherTransfer}
+      - APP_DOMAIN=${APP_DOMAIN:-teachertransfer.in}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: teacher-transfer-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://api:8080/api
+      - NEXT_PUBLIC_APP_NAME=${APP_NAME:-TeacherTransfer}
+      - NEXT_PUBLIC_APP_DOMAIN=${APP_DOMAIN:-teachertransfer.in}
+    depends_on:
+      - api
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  db:
+    image: postgres:15-alpine
+    container_name: teacher-transfer-db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    environment:
+      - POSTGRES_DB=teachertransfer
+      - POSTGRES_USER=teachertransfer
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-teacherpass}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready", "-U", "teachertransfer", "-d", "teachertransfer"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: teacher-transfer-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/nginx/ssl:/etc/nginx/ssl:ro
+      - certbot_data:/var/www/certbot
+    depends_on:
+      - api
+      - frontend
+    restart: unless-stopped
+    networks:
+      - app-network
+
+volumes:
+  postgres_data:
+  certbot_data:
+
+networks:
+  app-network:
+    driver: bridge
