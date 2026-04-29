@@ -46,12 +46,14 @@ public class Payment {
     @Column(name = "amount_paise", nullable = false)
     private Integer amountPaise;
 
+    @Builder.Default
     @Column(name = "currency", length = 3)
     private String currency = "INR";
 
     @Column(name = "plan", nullable = false, length = 20)
     private String plan;
 
+    @Builder.Default
     @Column(name = "status", nullable = false)
     private Integer status = PaymentStatus.PENDING.getCode();
 

@@ -40,14 +40,19 @@ public class TransferInterest {
     @Column(name = "to_teacher", nullable = false)
     private Long toTeacher;
 
+    @Builder.Default
     @Column(name = "type", nullable = false)
     private Integer type = InterestType.ONE_WAY.getCode();
 
+    @Builder.Default
     @Column(name = "status", nullable = false)
     private Integer status = InterestStatus.PENDING.getCode();
 
     @Column(name = "message")
     private String message;
+
+    @Column(name = "responded_at")
+    private LocalDateTime respondedAt;
 
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -81,5 +86,22 @@ public class TransferInterest {
 
     public void setStatusEnum(InterestStatus status) {
         this.status = status.getCode();
+    }
+
+    // Alias getters/setters for service compatibility
+    public Long getFromTeacherId() {
+        return fromTeacher;
+    }
+
+    public void setFromTeacherId(Long fromTeacherId) {
+        this.fromTeacher = fromTeacherId;
+    }
+
+    public Long getToTeacherId() {
+        return toTeacher;
+    }
+
+    public void setToTeacherId(Long toTeacherId) {
+        this.toTeacher = toTeacherId;
     }
 }

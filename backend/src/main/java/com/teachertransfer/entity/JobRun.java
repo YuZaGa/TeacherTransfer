@@ -38,15 +38,18 @@ public class JobRun {
     @Column(name = "completed_at")
     private LocalDateTime completedAt;
 
+    @Builder.Default
     @Column(name = "status", nullable = false, length = 20)
     private String status = "RUNNING";
 
     @Column(name = "last_processed_teacher_id")
     private Long lastProcessedTeacherId;
 
+    @Builder.Default
     @Column(name = "teachers_processed")
     private Integer teachersProcessed = 0;
 
+    @Builder.Default
     @Column(name = "teachers_failed")
     private Integer teachersFailed = 0;
 

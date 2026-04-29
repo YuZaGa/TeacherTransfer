@@ -10,7 +10,7 @@ spring:
   
   jpa:
     hibernate:
-      ddl-auto: ${DDL_AUTO:validate}
+      ddl-auto: ${DDL_AUTO:update}
     show-sql: ${SHOW_SQL:false}
     properties:
       hibernate:
@@ -55,15 +55,15 @@ app:
   
   # MSG91 Configuration
   msg91:
-    auth-key: ${MSG91_AUTH_KEY}
+    auth-key: ${MSG91_AUTH_KEY:}
     sender-id: ${MSG91_SENDER_ID:TCHTRN}
-    template-id: ${MSG91_TEMPLATE_ID}
+    template-id: ${MSG91_TEMPLATE_ID:}
   
   # Razorpay Configuration
   razorpay:
-    key-id: ${RAZORPAY_KEY_ID}
-    key-secret: ${RAZORPAY_KEY_SECRET}
-    webhook-secret: ${RAZORPAY_WEBHOOK_SECRET}
+    key-id: ${RAZORPAY_KEY_ID:}
+    key-secret: ${RAZORPAY_KEY_SECRET:}
+    webhook-secret: ${RAZORPAY_WEBHOOK_SECRET:}
   
   # Geohash Configuration
   geohash:
@@ -83,7 +83,7 @@ app:
 logging:
   level:
     com.teachertransfer: ${LOG_LEVEL:INFO}
-    org.springframework.security: ${SECURITY_LOG_LEVEL:INFO}
+    org.springframework.security: ${SECURITY_LOG_LEVEL:DEBUG}
     org.hibernate.SQL: ${SQL_LOG_LEVEL:WARN}
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"

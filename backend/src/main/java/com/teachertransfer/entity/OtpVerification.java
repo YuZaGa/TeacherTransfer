@@ -35,12 +35,15 @@ public class OtpVerification {
     @Column(name = "otp_hash", nullable = false)
     private String otpHash;
 
+    @Builder.Default
     @Column(name = "purpose", nullable = false)
     private Integer purpose = OtpPurpose.REGISTRATION.getCode();
 
+    @Builder.Default
     @Column(name = "attempts")
     private Integer attempts = 0;
 
+    @Builder.Default
     @Column(name = "verified")
     private Boolean verified = false;
 

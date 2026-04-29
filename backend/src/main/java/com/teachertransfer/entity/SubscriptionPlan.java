@@ -43,6 +43,7 @@ public class SubscriptionPlan {
     @Column(name = "features", columnDefinition = "JSONB")
     private String features;
 
+    @Builder.Default
     @Column(name = "is_active")
     private Boolean isActive = true;
 

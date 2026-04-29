@@ -44,6 +44,13 @@ public class Notification {
     @Column(name = "data", columnDefinition = "JSONB")
     private String data;
 
+    @Column(name = "related_teacher_id")
+    private Long relatedTeacherId;
+
+    @Column(name = "related_interest_id")
+    private Long relatedInterestId;
+
+    @Builder.Default
     @Column(name = "read")
     private Boolean read = false;
 

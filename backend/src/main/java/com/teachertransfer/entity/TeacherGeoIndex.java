@@ -42,8 +42,12 @@ public class TeacherGeoIndex {
     @Column(name = "school_type", nullable = false)
     private Integer schoolType;
 
+    @Builder.Default
     @Column(name = "is_premium")
     private Boolean isPremium = false;
+
+    @Column(name = "location_type", length = 20)
+    private String locationType;
 
     @Column(name = "preferred_lat", nullable = false)
     private Double preferredLat;

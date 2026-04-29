@@ -37,12 +37,14 @@ public class MatchResult {
     @Column(name = "matched_teacher_id", nullable = false)
     private Long matchedTeacherId;
 
+    @Builder.Default
     @Column(name = "match_type", nullable = false)
     private Integer matchType = MatchType.DIRECT.getCode();
 
     @Column(name = "distance_km", nullable = false)
     private Double distanceKm;
 
+    @Builder.Default
     @Column(name = "hop_count")
     private Integer hopCount = 1;
 
@@ -51,6 +53,12 @@ public class MatchResult {
 
     @Column(name = "score")
     private Double score;
+
+    @Column(name = "match_reason")
+    private String matchReason;
+
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
 
     @CreatedDate
     @Column(name = "match_generated_at", nullable = false, updatable = false)

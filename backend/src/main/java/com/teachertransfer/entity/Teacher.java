@@ -42,14 +42,22 @@ public class Teacher {
     @Column(name = "phone", nullable = false, unique = true, length = 15)
     private String phone;
 
+    @Builder.Default
     @Column(name = "phone_verified")
     private Boolean phoneVerified = false;
 
     @Column(name = "email", length = 255)
     private String email;
 
+    @Builder.Default
     @Column(name = "email_verified")
     private Boolean emailVerified = false;
+
+    @Column(name = "google_id", unique = true)
+    private String googleId;
+
+    @Column(name = "profile_picture_url", length = 500)
+    private String profilePictureUrl;
 
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
@@ -102,20 +110,25 @@ public class Teacher {
     @Column(name = "preferred_school_ids")
     private Long[] preferredSchoolIds;
 
+    @Builder.Default
     @Column(name = "radius_km")
     private Integer radiusKm = 30;
 
     // Status & Activity
+    @Builder.Default
     @Column(name = "status")
     private Integer status = TeacherStatus.ACTIVE.getCode();
 
+    @Builder.Default
     @Column(name = "last_interaction_at")
     private LocalDateTime lastInteractionAt = LocalDateTime.now();
 
+    @Builder.Default
     @Column(name = "profile_updated_at")
     private LocalDateTime profileUpdatedAt = LocalDateTime.now();
 
     // Subscription
+    @Builder.Default
     @Column(name = "subscription_status")
     private Integer subscriptionStatus = SubscriptionStatus.FREE.getCode();
 
@@ -132,6 +145,7 @@ public class Teacher {
     @Column(name = "referred_by")
     private Long referredBy;
 
+    @Builder.Default
     @Column(name = "referral_count")
     private Integer referralCount = 0;
 
