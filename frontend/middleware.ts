@@ -5,20 +5,14 @@ export default withAuth(
     function middleware(req) {
         const { pathname } = req.nextUrl;
         const token = req.nextauth.token;
-        const isLoggedIn = !!token;
-        const isOnboarded = token?.isOnboarded ?? false;
-
-        // Public routes that don't require auth
-        const publicRoutes = ['/login', '/auth/otp', '/'];
-        const isPublicRoute = publicRoutes.includes(pathname);
 
         // Logged in but not onboarded — force to onboarding
-        if (isLoggedIn && !isOnboarded && pathname !== '/onboarding') {
+        if (token && !token.isOnboarded && pathname !== '/onboarding') {
             return NextResponse.redirect(new URL('/onboarding', req.url));
         }
 
         // Logged in and onboarded — prevent going back to onboarding/login
-        if (isLoggedIn && isOnboarded && (pathname === '/onboarding' || pathname === '/login' || pathname === '/auth/otp')) {
+        if (token && token.isOnboarded && (pathname === '/onboarding' || pathname === '/login' || pathname === '/auth/otp')) {
             return NextResponse.redirect(new URL('/dashboard', req.url));
         }
 
@@ -27,6 +21,16 @@ export default withAuth(
     {
         pages: {
             signIn: '/login',
+        },
+        callbacks: {
+            authorized: ({ token, req }) => {
+                const { pathname } = req.nextUrl;
+                // Public routes that don't require auth
+                const publicRoutes = ['/', '/login', '/auth/otp'];
+                if (publicRoutes.includes(pathname)) return true;
+                // All other routes require authentication
+                return !!token;
+            },
         },
     }
 );
