@@ -10,9 +10,6 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 
-/**
- * Geospatial index for efficient location-based matching
- */
 @Entity
 @Table(name = "teacher_geo_index", indexes = {
     @Index(name = "idx_geo_match", columnList = "geohash, subject, school_type"),
@@ -46,14 +43,20 @@ public class TeacherGeoIndex {
     @Column(name = "is_premium")
     private Boolean isPremium = false;
 
-    @Column(name = "location_type", length = 20)
-    private String locationType;
+    @Column(name = "current_lat", nullable = false)
+    private Double currentLat;
+
+    @Column(name = "current_lng", nullable = false)
+    private Double currentLng;
 
     @Column(name = "preferred_lat", nullable = false)
     private Double preferredLat;
 
     @Column(name = "preferred_lng", nullable = false)
     private Double preferredLng;
+
+    @Column(name = "radius_km")
+    private Integer radiusKm;
 
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)

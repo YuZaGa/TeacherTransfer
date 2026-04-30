@@ -17,7 +17,13 @@ import {
     CheckCircle2,
     Clock,
     XCircle,
-    Star
+    Star,
+    Heart,
+    Eye,
+    Send,
+    ShieldCheck,
+    SkipForward,
+    MapPin
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -26,35 +32,34 @@ export default function DashboardPage() {
     const { data: session } = useSession();
     const [loading, setLoading] = useState(true);
     const [teacher, setTeacher] = useState<any>(null);
-    const [matches, setMatches] = useState<any[]>([]);
-    const [interests, setInterests] = useState<any[]>([]);
-    const [stats, setStats] = useState({
-        totalMatches: 0,
-        interestsReceived: 0,
-        interestsSent: 0
-    });
+    const [discoveryMatches, setDiscoveryMatches] = useState<any[]>([]);
+    const [mutualMatches, setMutualMatches] = useState<any[]>([]);
+    const [receivedInterests, setReceivedInterests] = useState<any[]>([]);
+    const [sentInterests, setSentInterests] = useState<any[]>([]);
+    const [sendingInterest, setSendingInterest] = useState<number | null>(null);
+    const [sentInterestIds, setSentInterestIds] = useState<Set<number>>(new Set());
 
     useEffect(() => {
         const fetchDashboardData = async () => {
             try {
-                const [meRes, matchRes, interestRes] = await Promise.all([
+                const [meRes, discRes, mutRes, rcvRes, sntRes] = await Promise.all([
                     api.get('/teacher/me'),
-                    api.get('/matching/matches'),
-                    api.get('/interest/received')
+                    api.get('/matches'),
+                    api.get('/matches/mutual'),
+                    api.get('/interest/received'),
+                    api.get('/interest/sent')
                 ]);
 
                 setTeacher(meRes.data.data);
-                setMatches(matchRes.data.data || []);
-                setInterests(interestRes.data.data || []);
+                setDiscoveryMatches(discRes.data.data || []);
+                setMutualMatches(mutRes.data.data || []);
+                setReceivedInterests(rcvRes.data.data || []);
+                setSentInterests(sntRes.data.data || []);
 
-                const sentRes = await api.get('/interest/sent');
-
-                setStats({
-                    totalMatches: (matchRes.data.data || []).length,
-                    interestsReceived: (interestRes.data.data || []).length,
-                    interestsSent: (sentRes.data.data || []).length
-                });
-
+                const sentIds = new Set<number>(
+                    (sntRes.data.data || []).map((i: any) => i.toTeacherId)
+                );
+                setSentInterestIds(sentIds);
             } catch (err: any) {
                 if (err.response?.status === 401) {
                     router.push('/login');
@@ -66,6 +71,40 @@ export default function DashboardPage() {
 
         fetchDashboardData();
     }, [router]);
+
+    const handleSendInterest = async (teacherId: number) => {
+        setSendingInterest(teacherId);
+        try {
+            await api.post(`/interest/${teacherId}`);
+            setSentInterestIds(new Set([...Array.from(sentInterestIds), teacherId]));
+        } catch (err) {
+            console.error('Failed to send interest', err);
+        } finally {
+            setSendingInterest(null);
+        }
+    };
+
+    const handleAcceptInterest = async (interestId: number) => {
+        try {
+            await api.post(`/interest/${interestId}/accept`);
+            const rcvRes = await api.get('/interest/received');
+            setReceivedInterests(rcvRes.data.data || []);
+            const mutRes = await api.get('/matches/mutual');
+            setMutualMatches(mutRes.data.data || []);
+        } catch (err) {
+            console.error('Failed to accept interest', err);
+        }
+    };
+
+    const handleRejectInterest = async (interestId: number) => {
+        try {
+            await api.post(`/interest/${interestId}/reject`);
+            const rcvRes = await api.get('/interest/received');
+            setReceivedInterests(rcvRes.data.data || []);
+        } catch (err) {
+            console.error('Failed to reject interest', err);
+        }
+    };
 
     if (loading) {
         return (
@@ -81,7 +120,6 @@ export default function DashboardPage() {
 
     return (
         <div className="min-h-screen bg-gray-50 pb-12">
-            {/* Top Navigation Bar */}
             <nav className="bg-white shadow-sm border-b sticky top-0 z-10">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between h-16 items-center">
@@ -111,189 +149,302 @@ export default function DashboardPage() {
             </nav>
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
-                {/* Welcome & Stats Header */}
                 <div className="mb-8">
                     <h1 className="text-3xl font-bold text-gray-900">Welcome back, {displayName.split(' ')[0]}!</h1>
-                    <p className="text-gray-500 mt-1">Here is what happening with your transfer requests today.</p>
+                    <p className="text-gray-500 mt-1">Discover transfer opportunities near your home location.</p>
                 </div>
 
-                {/* Stats Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4 hover:shadow-md transition-shadow">
-                        <div className="bg-blue-50 p-3 rounded-xl text-blue-600">
-                            <Users className="w-8 h-8" />
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                    <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 text-center">
+                        <div className="bg-blue-50 p-2.5 rounded-xl text-blue-600 inline-block mb-2">
+                            <Search className="w-6 h-6" />
                         </div>
-                        <div>
-                            <p className="text-sm font-medium text-gray-500 uppercase tracking-wider">Direct Matches</p>
-                            <p className="text-3xl font-bold text-gray-900">{stats.totalMatches}</p>
-                        </div>
+                        <p className="text-2xl font-bold text-gray-900">{discoveryMatches.length}</p>
+                        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Near Home</p>
                     </div>
-                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4 hover:shadow-md transition-shadow">
-                        <div className="bg-green-50 p-3 rounded-xl text-green-600">
-                            <Bell className="w-8 h-8" />
+                    <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 text-center">
+                        <div className="bg-green-50 p-2.5 rounded-xl text-green-600 inline-block mb-2">
+                            <ShieldCheck className="w-6 h-6" />
                         </div>
-                        <div>
-                            <p className="text-sm font-medium text-gray-500 uppercase tracking-wider">Interests Received</p>
-                            <p className="text-3xl font-bold text-gray-900">{stats.interestsReceived}</p>
-                        </div>
+                        <p className="text-2xl font-bold text-gray-900">{mutualMatches.length}</p>
+                        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Mutual</p>
                     </div>
-                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4 hover:shadow-md transition-shadow">
-                        <div className="bg-purple-50 p-3 rounded-xl text-purple-600">
-                            <Star className="w-8 h-8" />
+                    <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 text-center">
+                        <div className="bg-yellow-50 p-2.5 rounded-xl text-yellow-600 inline-block mb-2">
+                            <Bell className="w-6 h-6" />
                         </div>
-                        <div>
-                            <p className="text-sm font-medium text-gray-500 uppercase tracking-wider">Interests Sent</p>
-                            <p className="text-3xl font-bold text-gray-900">{stats.interestsSent}</p>
+                        <p className="text-2xl font-bold text-gray-900">{receivedInterests.length}</p>
+                        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Received</p>
+                    </div>
+                    <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 text-center">
+                        <div className="bg-purple-50 p-2.5 rounded-xl text-purple-600 inline-block mb-2">
+                            <Send className="w-6 h-6" />
                         </div>
+                        <p className="text-2xl font-bold text-gray-900">{sentInterests.length}</p>
+                        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Sent</p>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Main Content Area */}
-                    <div className="lg:col-span-2 space-y-8">
-                        {/* Featured Matches Preview */}
-                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                            <div className="p-6 border-b flex justify-between items-center">
-                                <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                                    <Clock className="text-blue-600 w-5 h-5" />
-                                    Top Direct Matches
-                                </h2>
-                                <Link href="/matches" className="text-sm font-bold text-blue-600 hover:text-blue-700">
-                                    View All
-                                </Link>
-                            </div>
-                            <div className="p-0">
-                                {matches.length > 0 ? (
-                                    <div className="divide-y">
-                                        {matches.slice(0, 3).map((match) => (
-                                            <div key={match.teacherId} className="p-6 hover:bg-gray-50 transition-colors flex items-center justify-between group">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-bold text-xl">
-                                                        {match.name[0]}
-                                                    </div>
-                                                    <div>
-                                                        <p className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{match.name}</p>
-                                                        <p className="text-sm text-gray-500">{match.schoolName} • {match.distanceText}</p>
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-center gap-3">
-                                                    <div className="text-right hidden sm:block">
-                                                        <div className="text-sm font-bold text-green-600">{match.matchScore}% Match</div>
-                                                        <div className="text-xs text-gray-400 capitalize">{match.subject.toLowerCase()}</div>
-                                                    </div>
-                                                    <button className="bg-blue-50 text-blue-600 p-2 rounded-lg hover:bg-blue-600 hover:text-white transition-all">
-                                                        <ArrowRightLeft className="w-5 h-5" />
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <div className="p-12 text-center">
-                                        <div className="inline-block p-4 bg-gray-50 rounded-full mb-4">
-                                            <Search className="w-8 h-8 text-gray-400" />
-                                        </div>
-                                        <h3 className="text-lg font-bold text-gray-900">No matches yet</h3>
-                                        <p className="text-gray-500 mt-1 max-w-xs mx-auto">We couldn't find any direct matches. Try expanding your search radius in settings.</p>
-                                        <Link href="/profile" className="mt-4 inline-block text-blue-600 font-bold hover:underline">
-                                            Update Preferences
-                                        </Link>
-                                    </div>
-                                )}
-                            </div>
+                <div className="space-y-8">
+                    {/* Section 1: Matches Near Your Home (PRIMARY) */}
+                    <section>
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                                <MapPin className="text-blue-600 w-5 h-5" />
+                                Matches Near Your Home
+                            </h2>
+                            <Link href="/matches" className="text-sm font-bold text-blue-600 hover:text-blue-700">
+                                View All
+                            </Link>
                         </div>
+                        {discoveryMatches.length > 0 ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {discoveryMatches.slice(0, 6).map((match: any) => (
+                                    <MatchCard
+                                        key={match.teacher?.id || match.id}
+                                        match={match}
+                                        sendingInterest={sendingInterest}
+                                        sentInterestIds={sentInterestIds}
+                                        onSendInterest={handleSendInterest}
+                                    />
+                                ))}
+                            </div>
+                        ) : (
+                            <EmptyState
+                                message="No matches yet — start exploring nearby teachers"
+                                actionLabel="Find Matches"
+                                actionHref="/matches"
+                            />
+                        )}
+                    </section>
 
-                        {/* Recent Interests Card */}
-                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                            <div className="p-6 border-b">
-                                <h2 className="text-xl font-bold text-gray-900">Interests Received</h2>
-                            </div>
-                            <div className="p-0">
-                                {interests.length > 0 ? (
-                                    <div className="divide-y">
-                                        {interests.slice(0, 3).map((item) => (
-                                            <div key={item.id} className="p-6 flex items-center justify-between">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="w-10 h-10 bg-green-100 text-green-600 rounded-lg flex items-center justify-center">
-                                                        <Bell className="w-5 h-5" />
-                                                    </div>
-                                                    <div>
-                                                        <p className="font-bold text-gray-900">{item.senderName} is interested</p>
-                                                        <p className="text-sm text-gray-500">{new Date(item.createdAt).toLocaleDateString()}</p>
-                                                    </div>
-                                                </div>
-                                                <div className="flex gap-2">
-                                                    <button className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors">
-                                                        <XCircle className="w-6 h-6" />
-                                                    </button>
-                                                    <button className="p-2 text-green-500 hover:bg-green-50 rounded-lg transition-colors">
-                                                        <CheckCircle2 className="w-6 h-6" />
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <div className="p-8 text-center text-gray-500">
-                                        No recent interests received.
-                                    </div>
-                                )}
-                            </div>
+                    {/* Section 2: Mutual Matches */}
+                    <section>
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                                <ShieldCheck className="text-green-600 w-5 h-5" />
+                                Mutual Matches
+                            </h2>
+                            <Link href="/matches" className="text-sm font-bold text-blue-600 hover:text-blue-700">
+                                View All
+                            </Link>
                         </div>
-                    </div>
-
-                    {/* Right Sidebar Area */}
-                    <div className="space-y-6">
-                        {!isPremium && (
-                            <div className="bg-gradient-to-br from-indigo-600 to-blue-700 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden group">
-                                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
-                                    <MapIcon size={120} />
-                                </div>
-                                <div className="relative z-10">
-                                    <div className="bg-white/20 p-2 rounded-lg inline-block mb-4 backdrop-blur-md">
-                                        <Star className="text-yellow-300 w-5 h-5" />
-                                    </div>
-                                    <h3 className="text-xl font-bold mb-2">Unlock Map View</h3>
-                                    <p className="text-blue-100 text-sm mb-6 leading-relaxed">See all mutual matches on an interactive map and discover broader transfer opportunities.</p>
-                                    <Link href="/subscription" className="block w-full py-3 bg-white text-blue-700 text-center font-bold rounded-xl shadow-lg hover:shadow-white/20 transition-all active:scale-[0.98]">
-                                        Upgrade to Premium
-                                    </Link>
-                                </div>
+                        {mutualMatches.length > 0 ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {mutualMatches.slice(0, 6).map((match: any) => (
+                                    <MutualMatchCard key={match.teacher?.id || match.id} match={match} />
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="bg-white rounded-2xl p-8 text-center border border-gray-100">
+                                <p className="text-gray-500">No mutual matches yet. Express interest in teachers near your home to build connections.</p>
                             </div>
                         )}
+                    </section>
 
-                        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                            <h3 className="font-bold text-gray-900 mb-4 text-lg">Quick Actions</h3>
-                            <div className="grid grid-cols-2 gap-4">
-                                <Link href="/matches" className="flex flex-col items-center gap-2 p-4 bg-gray-50 rounded-xl hover:bg-blue-50 transition-colors group">
-                                    <Search className="w-6 h-6 text-gray-400 group-hover:text-blue-600" />
-                                    <span className="text-xs font-bold text-gray-600 group-hover:text-blue-900">Find Matches</span>
-                                </Link>
-                                <Link href="/profile" className="flex flex-col items-center gap-2 p-4 bg-gray-50 rounded-xl hover:bg-blue-50 transition-colors group">
-                                    <User className="w-6 h-6 text-gray-400 group-hover:text-blue-600" />
-                                    <span className="text-xs font-bold text-gray-600 group-hover:text-blue-900">Edit Profile</span>
-                                </Link>
-                                <Link href="/interests" className="flex flex-col items-center gap-2 p-4 bg-gray-50 rounded-xl hover:bg-blue-50 transition-colors group">
-                                    <ArrowRightLeft className="w-6 h-6 text-gray-400 group-hover:text-blue-600" />
-                                    <span className="text-xs font-bold text-gray-600 group-hover:text-blue-900">Interests</span>
-                                </Link>
-                                <Link href="/subscription" className="flex flex-col items-center gap-2 p-4 bg-gray-50 rounded-xl hover:bg-blue-50 transition-colors group">
-                                    <CreditCard className="w-6 h-6 text-gray-400 group-hover:text-blue-600" />
-                                    <span className="text-xs font-bold text-gray-600 group-hover:text-blue-900">Billing</span>
-                                </Link>
+                    {/* Section 3: Interests Received */}
+                    <section>
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                                <Bell className="text-yellow-600 w-5 h-5" />
+                                Interests Received
+                            </h2>
+                            <Link href="/interests" className="text-sm font-bold text-blue-600 hover:text-blue-700">
+                                View All
+                            </Link>
+                        </div>
+                        {receivedInterests.length > 0 ? (
+                            <div className="space-y-3">
+                                {receivedInterests.slice(0, 3).map((item: any) => (
+                                    <div key={item.id} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 bg-yellow-50 text-yellow-600 rounded-xl flex items-center justify-center">
+                                                <Bell className="w-5 h-5" />
+                                            </div>
+                                            <div>
+                                                <p className="font-bold text-gray-900">{item.fromTeacherName || 'A teacher'}</p>
+                                                <p className="text-sm text-gray-500">{new Date(item.createdAt).toLocaleDateString()}</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={() => handleRejectInterest(item.id)}
+                                                className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                            >
+                                                <XCircle className="w-5 h-5" />
+                                            </button>
+                                            <button
+                                                onClick={() => handleAcceptInterest(item.id)}
+                                                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-bold text-sm flex items-center gap-1"
+                                            >
+                                                <CheckCircle2 className="w-4 h-4" />
+                                                Accept
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
-                        </div>
+                        ) : (
+                            <div className="bg-white rounded-2xl p-8 text-center border border-gray-100">
+                                <p className="text-gray-500">No interests received yet.</p>
+                            </div>
+                        )}
+                    </section>
 
-                        <div className="bg-blue-50 p-6 rounded-2xl border border-blue-100">
-                            <h3 className="font-bold text-blue-900 mb-1">Need help?</h3>
-                            <p className="text-sm text-blue-700 mb-4 opacity-80">Our support team is available 24/7 for Bihar teachers.</p>
-                            <button className="text-sm font-bold text-blue-600 hover:text-blue-800 transition-colors">
-                                Chat with us →
-                            </button>
+                    {/* Section 4: Interests Sent */}
+                    <section>
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                                <Send className="text-purple-600 w-5 h-5" />
+                                Interests Sent
+                            </h2>
+                            <Link href="/interests" className="text-sm font-bold text-blue-600 hover:text-blue-700">
+                                View All
+                            </Link>
                         </div>
-                    </div>
+                        {sentInterests.length > 0 ? (
+                            <div className="space-y-3">
+                                {sentInterests.slice(0, 3).map((item: any) => (
+                                    <div key={item.id} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center">
+                                                <Send className="w-5 h-5" />
+                                            </div>
+                                            <div>
+                                                <p className="font-bold text-gray-900">{item.toTeacherName || 'A teacher'}</p>
+                                                <p className="text-sm text-gray-500">{new Date(item.createdAt).toLocaleDateString()}</p>
+                                            </div>
+                                        </div>
+                                        <span className={`text-xs font-bold px-3 py-1 rounded-full ${
+                                            item.status === 'ACCEPTED' ? 'bg-green-50 text-green-600' :
+                                            item.status === 'REJECTED' ? 'bg-red-50 text-red-600' :
+                                            'bg-yellow-50 text-yellow-600'
+                                        }`}>
+                                            {item.status === 'ACCEPTED' ? 'Accepted' :
+                                             item.status === 'REJECTED' ? 'Rejected' : 'Waiting'}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="bg-white rounded-2xl p-8 text-center border border-gray-100">
+                                <p className="text-gray-500">No interests sent yet.</p>
+                            </div>
+                        )}
+                    </section>
                 </div>
             </main>
+        </div>
+    );
+}
+
+function MatchCard({ match, sendingInterest, sentInterestIds, onSendInterest }: {
+    match: any;
+    sendingInterest: number | null;
+    sentInterestIds: Set<number>;
+    onSendInterest: (id: number) => void;
+}) {
+    const t = match.teacher || {};
+    const teacherId = t.id;
+    const isSent = sentInterestIds.has(teacherId);
+    const distanceKm = t.distanceKm || match.distanceKm;
+
+    return (
+        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+            <div className="flex items-start justify-between mb-3">
+                <div>
+                    <p className="text-sm font-bold text-gray-900">
+                        {Math.round(distanceKm)} km away
+                    </p>
+                    <p className="text-xs text-gray-500">{t.approxArea || 'Nearby'}</p>
+                </div>
+                <span className="text-xs font-bold px-2 py-1 bg-blue-50 text-blue-600 rounded-full">
+                    {t.schoolType}
+                </span>
+            </div>
+            <p className="text-sm font-semibold text-gray-700 mb-4">
+                {t.subject}
+            </p>
+            <div className="flex gap-2">
+                <button
+                    onClick={() => onSendInterest(teacherId)}
+                    disabled={isSent || sendingInterest === teacherId}
+                    className={`flex-1 py-2.5 px-4 rounded-xl font-bold text-sm flex items-center justify-center gap-1.5 transition-all ${
+                        isSent
+                            ? 'bg-green-50 text-green-600 cursor-default'
+                            : 'bg-blue-600 text-white hover:bg-blue-700 active:scale-95'
+                    }`}
+                >
+                    {sendingInterest === teacherId ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : isSent ? (
+                        <>
+                            <CheckCircle2 className="w-4 h-4" />
+                            Sent
+                        </>
+                    ) : (
+                        <>
+                            <Heart className="w-4 h-4" />
+                            Interested
+                        </>
+                    )}
+                </button>
+                <button className="p-2.5 bg-gray-50 text-gray-400 rounded-xl hover:bg-gray-100 transition-colors">
+                    <SkipForward className="w-4 h-4" />
+                </button>
+            </div>
+        </div>
+    );
+}
+
+function MutualMatchCard({ match }: { match: any }) {
+    const t = match.teacher || {};
+
+    return (
+        <div className="bg-white rounded-2xl p-5 shadow-sm border border-green-200 bg-gradient-to-br from-white to-green-50/30">
+            <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 bg-green-100 text-green-600 rounded-full flex items-center justify-center font-bold text-lg">
+                    {t.name ? t.name[0] : '?'}
+                </div>
+                <div>
+                    <p className="font-bold text-gray-900">{t.name || 'Teacher'}</p>
+                    <p className="text-xs text-gray-500">{t.schoolName || 'School details unlocked'}</p>
+                </div>
+            </div>
+            <div className="space-y-1.5 mb-4">
+                <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Subject</span>
+                    <span className="font-semibold text-gray-700">{t.subject}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">School Type</span>
+                    <span className="font-semibold text-gray-700">{t.schoolType}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Distance</span>
+                    <span className="font-semibold text-gray-700">{Math.round(t.distanceKm || match.distanceKm)} km</span>
+                </div>
+            </div>
+            {t.phone && (
+                <div className="bg-green-50 p-3 rounded-xl text-center">
+                    <p className="text-xs text-green-700 font-medium">Contact</p>
+                    <p className="text-sm font-bold text-green-800">{t.phone}</p>
+                </div>
+            )}
+        </div>
+    );
+}
+
+function EmptyState({ message, actionLabel, actionHref }: { message: string; actionLabel: string; actionHref: string }) {
+    return (
+        <div className="bg-white rounded-2xl p-12 text-center border border-dashed border-gray-200">
+            <div className="inline-block p-4 bg-gray-50 rounded-full mb-4">
+                <Search className="w-8 h-8 text-gray-400" />
+            </div>
+            <p className="text-gray-600 mb-4">{message}</p>
+            <Link href={actionHref} className="inline-block px-6 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors">
+                {actionLabel}
+            </Link>
         </div>
     );
 }

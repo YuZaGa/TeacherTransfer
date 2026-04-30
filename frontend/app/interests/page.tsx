@@ -5,16 +5,17 @@ import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import {
     Bell,
-    ArrowRightLeft,
     Check,
     X,
     Loader2,
     ArrowLeft,
     Clock,
-    User,
     CheckCircle2,
     XCircle,
-    MessageSquare
+    ShieldCheck,
+    Send,
+    Phone,
+    School
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -70,121 +71,141 @@ export default function InterestsPage() {
 
     return (
         <div className="min-h-screen bg-gray-50 pb-20">
-            {/* Header */}
             <header className="bg-white border-b sticky top-0 z-10">
                 <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <Link href="/dashboard" className="p-2 hover:bg-gray-100 rounded-full transition-colors">
                             <ArrowLeft className="w-6 h-6 text-gray-600" />
                         </Link>
-                        <h1 className="text-2xl font-bold text-gray-900">Transfer Interests</h1>
+                        <h1 className="text-2xl font-bold text-gray-900">Interests</h1>
                     </div>
                 </div>
             </header>
 
             <main className="max-w-4xl mx-auto px-4 pt-8">
-                {/* Tabs */}
                 <div className="flex p-1 bg-gray-200 rounded-2xl mb-8 w-fit mx-auto sm:mx-0">
                     <button
                         onClick={() => setTab('received')}
-                        className={`px-8 py-3 rounded-xl font-black text-sm transition-all ${tab === 'received' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                        className={`px-8 py-3 rounded-xl font-bold text-sm transition-all flex items-center gap-1.5 ${tab === 'received' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                     >
+                        <Bell className="w-4 h-4" />
                         Received ({received.length})
                     </button>
                     <button
                         onClick={() => setTab('sent')}
-                        className={`px-8 py-3 rounded-xl font-black text-sm transition-all ${tab === 'sent' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                        className={`px-8 py-3 rounded-xl font-bold text-sm transition-all flex items-center gap-1.5 ${tab === 'sent' ? 'bg-white text-purple-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                     >
+                        <Send className="w-4 h-4" />
                         Sent ({sent.length})
                     </button>
                 </div>
 
-                {/* Content List */}
                 <div className="space-y-4">
-                    {(tab === 'received' ? received : sent).map((item) => (
-                        <div key={item.id} className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow relative overflow-hidden group">
-                            {/* Status Indicator */}
-                            <div className={`absolute top-0 left-0 w-1.5 h-full ${item.status === 'ACCEPTED' ? 'bg-green-500' :
-                                    item.status === 'REJECTED' ? 'bg-red-500' : 'bg-yellow-400'
+                    {(tab === 'received' ? received : sent).map((item) => {
+                        const isMutual = item.status === 'ACCEPTED';
+                        const isRejected = item.status === 'REJECTED';
+                        const isPending = item.status === 'PENDING';
+                        const displayName = tab === 'received' ? item.fromTeacherName : item.toTeacherName;
+                        const teacherPhone = tab === 'received' ? item.fromTeacherPhone : item.toTeacherPhone;
+                        const teacherSchool = tab === 'received' ? item.fromTeacherSchool : item.toTeacherSchool;
+
+                        return (
+                            <div key={item.id} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow relative overflow-hidden">
+                                <div className={`absolute top-0 left-0 w-1.5 h-full ${
+                                    isMutual ? 'bg-green-500' : isRejected ? 'bg-red-500' : 'bg-yellow-400'
                                 }`} />
 
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-                                <div className="flex items-center gap-4">
-                                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center font-black text-xl ${tab === 'received' ? 'bg-blue-50 text-blue-600' : 'bg-purple-50 text-purple-600'
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                    <div className="flex items-center gap-4">
+                                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold text-lg ${
+                                            isMutual
+                                                ? 'bg-green-100 text-green-600'
+                                                : tab === 'received'
+                                                    ? 'bg-blue-50 text-blue-600'
+                                                    : 'bg-purple-50 text-purple-600'
                                         }`}>
-                                        {(tab === 'received' ? item.senderName : item.receiverName)?.[0]}
-                                    </div>
-                                    <div>
-                                        <h3 className="text-lg font-black text-gray-900 leading-tight">
-                                            {tab === 'received' ? item.senderName : item.receiverName}
-                                        </h3>
-                                        <div className="flex items-center gap-2 mt-1">
-                                            <span className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1">
-                                                <Clock className="w-3 h-3" />
-                                                {new Date(item.createdAt).toLocaleDateString()}
-                                            </span>
-                                            <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${item.status === 'ACCEPTED' ? 'bg-green-50 text-green-600' :
-                                                    item.status === 'REJECTED' ? 'bg-red-50 text-red-600' : 'bg-yellow-50 text-yellow-600'
-                                                }`}>
-                                                {item.status}
-                                            </span>
+                                            {displayName ? displayName[0] : '?'}
                                         </div>
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center gap-3">
-                                    {tab === 'received' && item.status === 'PENDING' ? (
-                                        <>
-                                            <button
-                                                onClick={() => handleAction(item.id, 'reject')}
-                                                disabled={processing !== null}
-                                                className="flex-1 sm:flex-none p-3 text-red-500 hover:bg-red-50 rounded-2xl transition-colors flex items-center justify-center gap-2 font-bold"
-                                            >
-                                                <X className="w-6 h-6" />
-                                                <span className="sm:hidden">Reject</span>
-                                            </button>
-                                            <button
-                                                onClick={() => handleAction(item.id, 'accept')}
-                                                disabled={processing !== null}
-                                                className="flex-1 sm:flex-none px-6 py-3 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-100 flex items-center justify-center gap-2 font-black"
-                                            >
-                                                {processing === item.id ? (
-                                                    <Loader2 className="w-5 h-5 animate-spin" />
-                                                ) : (
-                                                    <>
-                                                        <Check className="w-5 h-5" />
-                                                        Accept Request
-                                                    </>
+                                        <div>
+                                            <h3 className="text-lg font-bold text-gray-900 leading-tight">
+                                                {displayName || 'Teacher'}
+                                            </h3>
+                                            <div className="flex items-center gap-2 mt-1">
+                                                <span className="text-xs text-gray-400 flex items-center gap-1">
+                                                    <Clock className="w-3 h-3" />
+                                                    {new Date(item.createdAt).toLocaleDateString()}
+                                                </span>
+                                                {isMutual && (
+                                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-50 text-green-600 flex items-center gap-0.5">
+                                                        <ShieldCheck className="w-3 h-3" />
+                                                        Mutual
+                                                    </span>
                                                 )}
-                                            </button>
-                                        </>
-                                    ) : item.status === 'ACCEPTED' ? (
-                                        <div className="flex gap-2">
-                                            <button className="px-6 py-3 bg-green-50 text-green-600 rounded-2xl font-black flex items-center gap-2 cursor-default">
-                                                <CheckCircle2 className="w-5 h-5" />
-                                                Mutual Connection
-                                            </button>
-                                            <button className="p-3 bg-blue-50 text-blue-600 rounded-2xl hover:bg-blue-600 hover:text-white transition-all shadow-sm">
-                                                <MessageSquare className="w-6 h-6" />
-                                            </button>
+                                            </div>
                                         </div>
-                                    ) : item.status === 'REJECTED' ? (
-                                        <span className="text-sm font-bold text-red-400 flex items-center gap-1">
-                                            <XCircle className="w-4 h-4" />
-                                            Closed
-                                        </span>
-                                    ) : (
-                                        <span className="text-sm font-bold text-gray-400 italic">Waiting for response...</span>
-                                    )}
+                                    </div>
+
+                                    <div className="flex items-center gap-3">
+                                        {tab === 'received' && isPending ? (
+                                            <>
+                                                <button
+                                                    onClick={() => handleAction(item.id, 'reject')}
+                                                    disabled={processing !== null}
+                                                    className="p-3 text-red-500 hover:bg-red-50 rounded-xl transition-colors flex items-center gap-2 font-bold"
+                                                >
+                                                    <X className="w-5 h-5" />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleAction(item.id, 'accept')}
+                                                    disabled={processing !== null}
+                                                    className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-100 flex items-center justify-center gap-2 font-bold"
+                                                >
+                                                    {processing === item.id ? (
+                                                        <Loader2 className="w-5 h-5 animate-spin" />
+                                                    ) : (
+                                                        <>
+                                                            <Check className="w-5 h-5" />
+                                                            Accept
+                                                        </>
+                                                    )}
+                                                </button>
+                                            </>
+                                        ) : isMutual ? (
+                                            <div className="space-y-1">
+                                                {teacherSchool && (
+                                                    <div className="flex items-center gap-1.5 text-sm text-green-700">
+                                                        <School className="w-4 h-4" />
+                                                        {teacherSchool}
+                                                    </div>
+                                                )}
+                                                {teacherPhone && (
+                                                    <div className="flex items-center gap-1.5 text-sm font-semibold text-green-800">
+                                                        <Phone className="w-4 h-4" />
+                                                        {teacherPhone}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ) : isRejected ? (
+                                            <span className="text-sm font-bold text-red-400 flex items-center gap-1">
+                                                <XCircle className="w-4 h-4" />
+                                                Closed
+                                            </span>
+                                        ) : (
+                                            <span className="text-sm font-bold text-gray-400 italic">Waiting for response...</span>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
 
                     {(tab === 'received' ? received : sent).length === 0 && (
-                        <div className="py-20 text-center bg-white rounded-3xl border border-dashed border-gray-200">
+                        <div className="py-20 text-center bg-white rounded-2xl border border-dashed border-gray-200">
                             <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
-                                <Bell className="w-10 h-10 text-gray-300" />
+                                {tab === 'received'
+                                    ? <Bell className="w-10 h-10 text-gray-300" />
+                                    : <Send className="w-10 h-10 text-gray-300" />
+                                }
                             </div>
                             <h3 className="text-xl font-bold text-gray-900">No {tab} interests yet</h3>
                             <p className="text-gray-500 mt-2 max-w-xs mx-auto font-medium">

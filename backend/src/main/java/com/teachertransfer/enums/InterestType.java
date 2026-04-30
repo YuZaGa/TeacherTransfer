@@ -8,8 +8,7 @@ import lombok.Getter;
 @Getter
 public enum InterestType {
     ONE_WAY(1, "One-Way"),
-    MUTUAL(2, "Mutual"),
-    MULTI_HOP(3, "Multi-Hop");
+    MUTUAL(2, "Mutual");
 
     private final int code;
     private final String displayName;

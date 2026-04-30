@@ -28,20 +28,20 @@ public class InterestService {
     @Autowired
     private NotificationRepository notificationRepository;
 
+    @Autowired
+    private TeacherService teacherService;
+
     public InterestResponse sendInterest(Long fromTeacherId, Long toTeacherId) {
-        // Check if teachers exist
         Teacher fromTeacher = teacherRepository.findById(fromTeacherId)
                 .orElseThrow(() -> new RuntimeException("Teacher not found"));
 
         Teacher toTeacher = teacherRepository.findById(toTeacherId)
                 .orElseThrow(() -> new RuntimeException("Teacher not found"));
 
-        // Check if interest already exists
         if (interestRepository.findExistingInterest(fromTeacherId, toTeacherId).isPresent()) {
             throw new RuntimeException("Interest already sent");
         }
 
-        // Create interest
         TransferInterest interest = new TransferInterest();
         interest.setFromTeacherId(fromTeacherId);
         interest.setToTeacherId(toTeacherId);
@@ -51,100 +51,109 @@ public class InterestService {
 
         interest = interestRepository.save(interest);
 
-        // Create notification for recipient
+        teacherService.touchInteraction(fromTeacherId);
+
+        boolean isMutual = interestRepository.findExistingInterest(toTeacherId, fromTeacherId)
+                .filter(i -> i.getStatus().equals(InterestStatus.PENDING.getCode()) ||
+                        i.getStatus().equals(InterestStatus.ACCEPTED.getCode()))
+                .isPresent();
+
+        if (isMutual) {
+            interest.setType(InterestType.MUTUAL.getCode());
+            interest = interestRepository.save(interest);
+
+            TransferInterest reverse = interestRepository.findExistingInterest(toTeacherId, fromTeacherId).get();
+            reverse.setType(InterestType.MUTUAL.getCode());
+            interestRepository.save(reverse);
+        }
+
         Notification notification = new Notification();
         notification.setTeacherId(toTeacherId);
-        notification.setTitle("New Transfer Interest");
-        notification.setMessage(fromTeacher.getName() + " is interested in transferring with you");
-        notification.setType("INTEREST_RECEIVED");
+        notification.setTitle(isMutual ? "Mutual Match Found!" : "New Transfer Interest");
+        notification.setMessage(isMutual
+                ? "You and " + fromTeacher.getName() + " have a mutual match!"
+                : "A teacher is interested in transferring with you");
+        notification.setType(isMutual ? "MUTUAL_MATCH" : "INTEREST_RECEIVED");
         notification.setRelatedTeacherId(fromTeacherId);
         notification.setRelatedInterestId(interest.getId());
         notification.setRead(false);
         notification.setCreatedAt(LocalDateTime.now());
-
         notificationRepository.save(notification);
 
-        return mapToInterestResponse(interest, fromTeacher, toTeacher);
+        if (isMutual) {
+            Notification mutualNotification = new Notification();
+            mutualNotification.setTeacherId(fromTeacherId);
+            mutualNotification.setTitle("Mutual Match Found!");
+            mutualNotification.setMessage("You and " + toTeacher.getName() + " have a mutual match!");
+            mutualNotification.setType("MUTUAL_MATCH");
+            mutualNotification.setRelatedTeacherId(toTeacherId);
+            mutualNotification.setRelatedInterestId(interest.getId());
+            mutualNotification.setRead(false);
+            mutualNotification.setCreatedAt(LocalDateTime.now());
+            notificationRepository.save(mutualNotification);
+        }
+
+        return mapToInterestResponse(interest, fromTeacher, toTeacher, isMutual);
     }
 
     public InterestResponse acceptInterest(Long interestId, Long teacherId) {
         TransferInterest interest = interestRepository.findById(interestId)
                 .orElseThrow(() -> new RuntimeException("Interest not found"));
 
-        // Check if teacher is the recipient
         if (!interest.getToTeacherId().equals(teacherId)) {
             throw new RuntimeException("You can only accept interests sent to you");
         }
 
-        // Check if already responded
         if (interest.getStatus() != InterestStatus.PENDING.getCode()) {
             throw new RuntimeException("Interest already responded");
         }
 
-        // Update interest status
         interest.setStatus(InterestStatus.ACCEPTED.getCode());
         interest.setRespondedAt(LocalDateTime.now());
+        interest.setType(InterestType.MUTUAL.getCode());
         interest = interestRepository.save(interest);
 
-        // Check for mutual interest
-        List<TransferInterest> mutualInterests = interestRepository.findMutualInterests(
-                interest.getToTeacherId(),
-                interest.getFromTeacherId()
-        );
+        teacherService.touchInteraction(teacherId);
 
-        if (!mutualInterests.isEmpty()) {
-            // Create notification for sender
-            Teacher sender = teacherRepository.findById(interest.getFromTeacherId())
-                    .orElseThrow(() -> new RuntimeException("Teacher not found"));
+        Notification notification = new Notification();
+        notification.setTeacherId(interest.getFromTeacherId());
+        notification.setTitle("Interest Accepted - Mutual Match!");
+        notification.setMessage("Your transfer interest has been accepted! Contact details are now unlocked.");
+        notification.setType("INTEREST_ACCEPTED");
+        notification.setRelatedTeacherId(interest.getToTeacherId());
+        notification.setRelatedInterestId(interestId);
+        notification.setRead(false);
+        notification.setCreatedAt(LocalDateTime.now());
+        notificationRepository.save(notification);
 
-            Notification notification = new Notification();
-            notification.setTeacherId(interest.getFromTeacherId());
-            notification.setTitle("Interest Accepted");
-            notification.setMessage("Your transfer interest has been accepted!");
-            notification.setType("INTEREST_ACCEPTED");
-            notification.setRelatedTeacherId(interest.getToTeacherId());
-            notification.setRelatedInterestId(interestId);
-            notification.setRead(false);
-            notification.setCreatedAt(LocalDateTime.now());
+        Teacher fromTeacher = teacherRepository.findById(interest.getFromTeacherId()).orElse(null);
+        Teacher toTeacher = teacherRepository.findById(interest.getToTeacherId()).orElse(null);
 
-            notificationRepository.save(notification);
-        }
-
-        Teacher fromTeacher = teacherRepository.findById(interest.getFromTeacherId())
-                .orElseThrow(() -> new RuntimeException("Teacher not found"));
-
-        Teacher toTeacher = teacherRepository.findById(interest.getToTeacherId())
-                .orElseThrow(() -> new RuntimeException("Teacher not found"));
-
-        return mapToInterestResponse(interest, fromTeacher, toTeacher);
+        return mapToInterestResponse(interest, fromTeacher, toTeacher, true);
     }
 
     public InterestResponse rejectInterest(Long interestId, Long teacherId) {
         TransferInterest interest = interestRepository.findById(interestId)
                 .orElseThrow(() -> new RuntimeException("Interest not found"));
 
-        // Check if teacher is the recipient
         if (!interest.getToTeacherId().equals(teacherId)) {
             throw new RuntimeException("You can only reject interests sent to you");
         }
 
-        // Check if already responded
         if (interest.getStatus() != InterestStatus.PENDING.getCode()) {
             throw new RuntimeException("Interest already responded");
         }
 
-        // Update interest status
         interest.setStatus(InterestStatus.REJECTED.getCode());
         interest.setRespondedAt(LocalDateTime.now());
         interest = interestRepository.save(interest);
 
-        Teacher fromTeacher = teacherRepository.findById(interest.getFromTeacherId())
-                .orElseThrow(() -> new RuntimeException("Teacher not found"));
+        teacherService.touchInteraction(teacherId);
 
-        Teacher toTeacher = teacherRepository.findById(interest.getToTeacherId())
-                .orElseThrow(() -> new RuntimeException("Teacher not found"));
+        Teacher fromTeacher = teacherRepository.findById(interest.getFromTeacherId()).orElse(null);
+        Teacher toTeacher = teacherRepository.findById(interest.getToTeacherId()).orElse(null);
 
-        return mapToInterestResponse(interest, fromTeacher, toTeacher);
+        return mapToInterestResponse(interest, fromTeacher, toTeacher, false);
     }
 
     public List<InterestResponse> getSentInterests(Long teacherId) {
@@ -153,7 +162,8 @@ public class InterestService {
                 .map(interest -> {
                     Teacher fromTeacher = teacherRepository.findById(interest.getFromTeacherId()).orElse(null);
                     Teacher toTeacher = teacherRepository.findById(interest.getToTeacherId()).orElse(null);
-                    return mapToInterestResponse(interest, fromTeacher, toTeacher);
+                    boolean isMutual = interest.getStatus().equals(InterestStatus.ACCEPTED.getCode());
+                    return mapToInterestResponse(interest, fromTeacher, toTeacher, isMutual);
                 })
                 .collect(Collectors.toList());
     }
@@ -164,22 +174,42 @@ public class InterestService {
                 .map(interest -> {
                     Teacher fromTeacher = teacherRepository.findById(interest.getFromTeacherId()).orElse(null);
                     Teacher toTeacher = teacherRepository.findById(interest.getToTeacherId()).orElse(null);
-                    return mapToInterestResponse(interest, fromTeacher, toTeacher);
+                    boolean isMutual = interest.getStatus().equals(InterestStatus.ACCEPTED.getCode());
+                    return mapToInterestResponse(interest, fromTeacher, toTeacher, isMutual);
                 })
                 .collect(Collectors.toList());
     }
 
-    private InterestResponse mapToInterestResponse(TransferInterest interest, Teacher fromTeacher, Teacher toTeacher) {
+    private InterestResponse mapToInterestResponse(TransferInterest interest, Teacher fromTeacher, Teacher toTeacher, boolean isMutual) {
         InterestResponse response = new InterestResponse();
         response.setId(interest.getId());
         response.setFromTeacherId(interest.getFromTeacherId());
-        response.setFromTeacherName(fromTeacher != null ? fromTeacher.getName() : null);
         response.setToTeacherId(interest.getToTeacherId());
-        response.setToTeacherName(toTeacher != null ? toTeacher.getName() : null);
         response.setType(InterestType.fromCode(interest.getType()));
         response.setStatus(InterestStatus.fromCode(interest.getStatus()));
         response.setCreatedAt(interest.getCreatedAt());
         response.setRespondedAt(interest.getRespondedAt());
+
+        if (fromTeacher != null) {
+            if (isMutual) {
+                response.setFromTeacherName(fromTeacher.getName());
+                response.setFromTeacherPhone(fromTeacher.getPhone());
+                response.setFromTeacherSchool(fromTeacher.getSchoolName());
+            } else {
+                response.setFromTeacherName(fromTeacher.getName());
+            }
+        }
+
+        if (toTeacher != null) {
+            if (isMutual) {
+                response.setToTeacherName(toTeacher.getName());
+                response.setToTeacherPhone(toTeacher.getPhone());
+                response.setToTeacherSchool(toTeacher.getSchoolName());
+            } else {
+                response.setToTeacherName(toTeacher.getName());
+            }
+        }
+
         return response;
     }
 }

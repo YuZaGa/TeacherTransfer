@@ -3,19 +3,22 @@ package com.teachertransfer.service;
 import com.teachertransfer.dto.match.MatchResponse;
 import com.teachertransfer.entity.MatchResult;
 import com.teachertransfer.entity.Teacher;
+import com.teachertransfer.entity.TeacherGeoIndex;
 import com.teachertransfer.enums.MatchType;
 import com.teachertransfer.enums.SchoolType;
 import com.teachertransfer.enums.Subject;
 import com.teachertransfer.enums.SubscriptionStatus;
 import com.teachertransfer.repository.MatchResultRepository;
+import com.teachertransfer.repository.TeacherGeoIndexRepository;
 import com.teachertransfer.repository.TeacherRepository;
+import com.teachertransfer.repository.TransferInterestRepository;
+import com.teachertransfer.util.GeohashUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -27,180 +30,188 @@ public class MatchingService {
     @Autowired
     private MatchResultRepository matchResultRepository;
 
+    @Autowired
+    private TeacherGeoIndexRepository teacherGeoIndexRepository;
+
+    @Autowired
+    private TransferInterestRepository transferInterestRepository;
+
     @Value("${app.matching.max-results}")
     private Integer maxResults;
 
-    public List<MatchResponse> getMatches(Long teacherId, MatchType matchType) {
-        Teacher teacher = teacherRepository.findById(teacherId)
-                .orElseThrow(() -> new RuntimeException("Teacher not found"));
+    @Value("${app.ghost.inactive-days}")
+    private Integer ghostInactiveDays;
 
-        // Check if teacher has active subscription (Relaxed for dev/testing)
-        /*
-        if (teacher.getSubscriptionStatus() != SubscriptionStatus.PAID_ACTIVE.getCode()) {
-            throw new RuntimeException("Active subscription required to view matches");
+    public List<MatchResponse> getDiscoveryMatches(Long teacherId) {
+        Teacher teacher = getTeacherOrThrow(teacherId);
+        List<MatchResult> cached = getValidCachedMatches(teacher, MatchType.POTENTIAL);
+        if (!cached.isEmpty()) {
+            return cached.stream().limit(maxResults).map(m -> mapToResponse(m, teacher, false)).collect(Collectors.toList());
         }
-        */
+        List<MatchResult> generated = generateAndCacheMatches(teacher);
+        return generated.stream().limit(maxResults).map(m -> mapToResponse(m, teacher, false)).collect(Collectors.toList());
+    }
 
-        // Get cached matches
-        List<MatchResult> matchResults = matchResultRepository
-                .findByTeacherIdAndMatchType(teacherId, matchType.getCode());
-
-        // If no cached matches, generate new ones
-        if (matchResults.isEmpty()) {
-            matchResults = generateMatches(teacher, matchType);
-            // Cache the results
-            for (MatchResult result : matchResults) {
-                matchResultRepository.save(result);
-            }
+    public List<MatchResponse> getMutualMatches(Long teacherId) {
+        Teacher teacher = getTeacherOrThrow(teacherId);
+        List<MatchResult> cached = getValidCachedMatches(teacher, MatchType.MUTUAL);
+        if (!cached.isEmpty()) {
+            return cached.stream().map(m -> mapToResponse(m, teacher, true)).collect(Collectors.toList());
         }
-
-        return matchResults.stream()
-                .limit(maxResults)
-                .map(this::mapToMatchResponse)
+        List<MatchResult> all = generateAndCacheMatches(teacher);
+        return all.stream()
+                .filter(m -> m.getMatchType().equals(MatchType.MUTUAL.getCode()))
+                .map(m -> mapToResponse(m, teacher, true))
                 .collect(Collectors.toList());
+    }
+
+    public List<MatchResponse> getInterestSentMatches(Long teacherId) {
+        Teacher teacher = getTeacherOrThrow(teacherId);
+        List<MatchResult> cached = getValidCachedMatches(teacher, MatchType.INTEREST_SENT);
+        return cached.stream().map(m -> mapToResponse(m, teacher, false)).collect(Collectors.toList());
     }
 
     public List<MatchResponse> getMatchesForMap(Long teacherId) {
-        Teacher teacher = teacherRepository.findById(teacherId)
-                .orElseThrow(() -> new RuntimeException("Teacher not found"));
-
-        // Check if teacher has premium subscription
-        if (!hasPremiumAccess(teacher)) {
-            throw new RuntimeException("Premium subscription required for map view");
-        }
-
-        // Get all matches for map view
-        List<MatchResult> matchResults = matchResultRepository
-                .findByTeacherIdOrderByScoreDesc(teacherId);
-
-        return matchResults.stream()
-                .map(this::mapToMatchResponse)
-                .collect(Collectors.toList());
+        Teacher teacher = getTeacherOrThrow(teacherId);
+        List<MatchResult> all = matchResultRepository.findByTeacherIdOrderByScoreDesc(teacherId);
+        return all.stream().map(m -> mapToResponse(m, teacher, m.getMatchType().equals(MatchType.MUTUAL.getCode()))).collect(Collectors.toList());
     }
 
     public void refreshMatches(Long teacherId) {
-        Teacher teacher = teacherRepository.findById(teacherId)
-                .orElseThrow(() -> new RuntimeException("Teacher not found"));
-
-        // Delete old matches
-        List<MatchResult> oldMatches = matchResultRepository.findByTeacherId(teacherId);
-        matchResultRepository.deleteAll(oldMatches);
-
-        // Generate new matches
-        List<MatchResult> newMatches = generateMatches(teacher, MatchType.DIRECT);
-        matchResultRepository.saveAll(newMatches);
+        Teacher teacher = getTeacherOrThrow(teacherId);
+        matchResultRepository.deleteByTeacherId(teacherId);
+        generateAndCacheMatches(teacher);
     }
 
-    private List<MatchResult> generateMatches(Teacher teacher, MatchType matchType) {
-        List<MatchResult> matches = new ArrayList<>();
+    private List<MatchResult> generateAndCacheMatches(Teacher teacher) {
+        Set<String> searchArea = GeohashUtil.encodeWithNeighbors(
+                teacher.getPreferredLat(), teacher.getPreferredLng()
+        );
 
-        // Get all active teachers with active subscriptions
-        List<Teacher> allTeachers = teacherRepository.findActiveSubscribers();
+        List<TeacherGeoIndex> candidates = teacherGeoIndexRepository.findCandidatesByGeohashes(
+                searchArea, teacher.getSubject(), teacher.getSchoolType(), teacher.getId()
+        );
 
-        // Filter out self and already matched teachers
-        List<Teacher> potentialMatches = allTeachers.stream()
-                .filter(t -> !t.getId().equals(teacher.getId()))
-                .collect(Collectors.toList());
+        LocalDateTime ghostCutoff = LocalDateTime.now().minusDays(ghostInactiveDays);
+        List<MatchResult> results = new ArrayList<>();
 
-        // Generate matches based on type
-        for (Teacher potentialMatch : potentialMatches) {
-            double score = calculateMatchScore(teacher, potentialMatch);
-            double distance = calculateDistance(
+        for (TeacherGeoIndex candidate : candidates) {
+            Teacher candidateTeacher = teacherRepository.findById(candidate.getTeacherId()).orElse(null);
+            if (candidateTeacher == null) continue;
+
+            if (!isTeacherActive(candidateTeacher)) continue;
+
+            if (candidateTeacher.getLastInteractionAt() != null &&
+                    candidateTeacher.getLastInteractionAt().isBefore(ghostCutoff)) continue;
+
+            double distance = haversineDistance(
                     teacher.getPreferredLat(), teacher.getPreferredLng(),
-                    potentialMatch.getCurrentLat(), potentialMatch.getCurrentLng()
+                    candidate.getCurrentLat(), candidate.getCurrentLng()
             );
 
-            // Check if within radius
-            if (distance <= teacher.getRadiusKm()) {
-                MatchResult match = new MatchResult();
-                match.setTeacherId(teacher.getId());
-                match.setMatchedTeacherId(potentialMatch.getId());
-                match.setMatchType(matchType.getCode());
-                match.setScore(score);
-                match.setDistanceKm(distance);
-                match.setMatchReason(generateMatchReason(teacher, potentialMatch, distance));
-                match.setHopCount(1);
-                match.setCreatedAt(LocalDateTime.now());
-                matches.add(match);
+            if (distance > teacher.getRadiusKm()) continue;
+
+            if (teacher.getPreferredSchoolIds() != null && teacher.getPreferredSchoolIds().length > 0) {
+                if (candidateTeacher.getUdiseCode() == null ||
+                        !Arrays.asList(teacher.getPreferredSchoolIds()).contains(Long.valueOf(candidateTeacher.getUdiseCode()))) {
+                    continue;
+                }
             }
+
+            boolean isMutual = isMutualMatch(teacher, candidate, candidateTeacher);
+
+            int matchTypeCode = isMutual ? MatchType.MUTUAL.getCode() : MatchType.POTENTIAL.getCode();
+            boolean hasInterestFromMe = transferInterestRepository
+                    .findExistingInterest(teacher.getId(), candidate.getTeacherId()).isPresent();
+            if (hasInterestFromMe && !isMutual) {
+                matchTypeCode = MatchType.INTEREST_SENT.getCode();
+            }
+
+            double score = calculateScore(distance, isMutual, candidateTeacher);
+
+            MatchResult result = new MatchResult();
+            result.setTeacherId(teacher.getId());
+            result.setMatchedTeacherId(candidate.getTeacherId());
+            result.setMatchType(matchTypeCode);
+            result.setDistanceKm(distance);
+            result.setScore(score);
+            result.setMatchReason(buildMatchReason(candidateTeacher, distance));
+            result.setCreatedAt(LocalDateTime.now());
+            result.setMatchGeneratedAt(LocalDateTime.now());
+            results.add(result);
         }
 
-        // Sort by score (descending)
-        matches.sort((a, b) -> Double.compare(b.getScore(), a.getScore()));
+        results.sort((a, b) -> {
+            int scoreCompare = Double.compare(b.getScore(), a.getScore());
+            if (scoreCompare != 0) return scoreCompare;
+            return Double.compare(a.getDistanceKm(), b.getDistanceKm());
+        });
 
-        return matches;
+        List<MatchResult> limited = results.stream().limit(maxResults).collect(Collectors.toList());
+        matchResultRepository.saveAll(limited);
+        return limited;
     }
 
-    private double calculateMatchScore(Teacher teacher1, Teacher teacher2) {
-        double score = 0.0;
-
-        // Subject match (40 points)
-        if (teacher1.getSubject().equals(teacher2.getSubject())) {
-            score += 40;
-        }
-
-        // School type match (20 points)
-        if (teacher1.getSchoolType().equals(teacher2.getSchoolType())) {
-            score += 20;
-        }
-
-        // Distance score (up to 40 points, closer is better)
-        double distance = calculateDistance(
-                teacher1.getPreferredLat(), teacher1.getPreferredLng(),
-                teacher2.getCurrentLat(), teacher2.getCurrentLng()
+    private boolean isMutualMatch(Teacher teacher, TeacherGeoIndex candidate, Teacher candidateTeacher) {
+        double reverseDistance = haversineDistance(
+                candidate.getPreferredLat(), candidate.getPreferredLng(),
+                teacher.getCurrentLat(), teacher.getCurrentLng()
         );
-        double distanceScore = Math.max(0, 40 - distance);
-        score += distanceScore;
-
-        return score;
+        Integer candidateRadius = candidate.getRadiusKm() != null ? candidate.getRadiusKm() : 30;
+        return reverseDistance <= candidateRadius;
     }
 
-    private double calculateDistance(double lat1, double lng1, double lat2, double lng2) {
-        final int R = 6371; // Earth's radius in km
+    private double calculateScore(double distanceKm, boolean isMutual, Teacher candidateTeacher) {
+        double score = 100.0 - (distanceKm * 2.0);
+        if (isMutual) score += 20.0;
+        if (candidateTeacher.isPaidActive()) score += 10.0;
+        return Math.max(0, score);
+    }
 
-        double latDistance = Math.toRadians(lat2 - lat1);
-        double lngDistance = Math.toRadians(lng2 - lng1);
+    private boolean isTeacherActive(Teacher teacher) {
+        return teacher.getStatus() != null && teacher.getStatus() == 1;
+    }
 
-        double a = Math.sin(latDistance / 2) * Math.sin(latDistance / 2)
+    private double haversineDistance(double lat1, double lng1, double lat2, double lng2) {
+        final double R = 6371.0;
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLng = Math.toRadians(lng2 - lng1);
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
                 + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
-                * Math.sin(lngDistance / 2) * Math.sin(lngDistance / 2);
-
+                * Math.sin(dLng / 2) * Math.sin(dLng / 2);
         double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
         return R * c;
     }
 
-    private String generateMatchReason(Teacher teacher1, Teacher teacher2, double distance) {
-        StringBuilder reason = new StringBuilder();
-
-        if (teacher1.getSubject().equals(teacher2.getSubject())) {
-            reason.append("Same subject (").append(Subject.fromCode(teacher1.getSubject()).getDisplayName()).append(")");
+    private String buildMatchReason(Teacher candidate, double distance) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(String.format("%.1f km away", distance));
+        if (candidate.getSubject() != null) {
+            sb.append(" • ").append(Subject.fromCode(candidate.getSubject()).getDisplayName());
         }
-
-        if (teacher1.getSchoolType().equals(teacher2.getSchoolType())) {
-            if (reason.length() > 0) reason.append(", ");
-            reason.append("Same school type (").append(SchoolType.fromCode(teacher1.getSchoolType()).getDisplayName()).append(")");
+        if (candidate.getSchoolType() != null) {
+            sb.append(" • ").append(SchoolType.fromCode(candidate.getSchoolType()).getDisplayName());
         }
-
-        if (reason.length() > 0) reason.append(". ");
-        reason.append(String.format("%.1f km away", distance));
-
-        return reason.toString();
+        return sb.toString();
     }
 
-    private boolean hasPremiumAccess(Teacher teacher) {
-        // Return true for testing purposes
-        return true;
-        /*
-        // Check if teacher has premium plan
-        return teacher.getSubscriptionStatus() == SubscriptionStatus.PAID_ACTIVE.getCode()
-                && (teacher.getSubscriptionPlan() != null
-                && (teacher.getSubscriptionPlan().contains("PREMIUM")
-                || teacher.getSubscriptionPlan().contains("3M")));
-        */
+    private List<MatchResult> getValidCachedMatches(Teacher teacher, MatchType matchType) {
+        List<MatchResult> all = matchResultRepository.findByTeacherIdAndMatchType(
+                teacher.getId(), matchType.getCode()
+        );
+        LocalDateTime profileUpdatedAt = teacher.getProfileUpdatedAt();
+        if (profileUpdatedAt == null) return all;
+        return all.stream()
+                .filter(m -> m.getMatchGeneratedAt() != null && m.getMatchGeneratedAt().isAfter(profileUpdatedAt))
+                .collect(Collectors.toList());
     }
 
-    private MatchResponse mapToMatchResponse(MatchResult matchResult) {
+    private Teacher getTeacherOrThrow(Long teacherId) {
+        return teacherRepository.findById(teacherId)
+                .orElseThrow(() -> new RuntimeException("Teacher not found"));
+    }
+
+    private MatchResponse mapToResponse(MatchResult matchResult, Teacher viewer, boolean revealIdentity) {
         MatchResponse response = new MatchResponse();
         response.setId(matchResult.getId());
         response.setTeacherId(matchResult.getTeacherId());
@@ -208,22 +219,33 @@ public class MatchingService {
         response.setScore(matchResult.getScore());
         response.setDistanceKm(matchResult.getDistanceKm());
         response.setMatchReason(matchResult.getMatchReason());
-        response.setHopCount(matchResult.getHopCount());
+        response.setIsMutual(matchResult.getMatchType().equals(MatchType.MUTUAL.getCode()));
         response.setCreatedAt(matchResult.getCreatedAt());
 
-        // Get matched teacher details
-        Teacher matchedTeacher = teacherRepository.findById(matchResult.getMatchedTeacherId())
-                .orElse(null);
+        Teacher matchedTeacher = teacherRepository.findById(matchResult.getMatchedTeacherId()).orElse(null);
+        if (matchedTeacher == null) return response;
 
-        if (matchedTeacher != null) {
-            MatchResponse.TeacherInfo teacherInfo = new MatchResponse.TeacherInfo();
-            teacherInfo.setId(matchedTeacher.getId());
-            teacherInfo.setName(matchedTeacher.getName());
-            teacherInfo.setSubject(Subject.fromCode(matchedTeacher.getSubject()).getDisplayName());
-            teacherInfo.setSchoolType(SchoolType.fromCode(matchedTeacher.getSchoolType()).getDisplayName());
-            response.setTeacher(teacherInfo);
+        MatchResponse.TeacherInfo info = new MatchResponse.TeacherInfo();
+        info.setId(matchedTeacher.getId());
+        info.setDistanceKm(matchResult.getDistanceKm());
+        info.setSubject(Subject.fromCode(matchedTeacher.getSubject()).getDisplayName());
+        info.setSchoolType(SchoolType.fromCode(matchedTeacher.getSchoolType()).getDisplayName());
+        info.setApproxArea("Near " + resolveBlockName(matchedTeacher));
+
+        boolean isMutual = matchResult.getMatchType().equals(MatchType.MUTUAL.getCode());
+        info.setIdentityRevealed(isMutual);
+
+        if (isMutual) {
+            info.setName(matchedTeacher.getName());
+            info.setSchoolName(matchedTeacher.getSchoolName());
+            info.setPhone(matchedTeacher.getPhone());
         }
 
+        response.setTeacher(info);
         return response;
+    }
+
+    private String resolveBlockName(Teacher teacher) {
+        return "Block " + teacher.getCurrentBlockId();
     }
 }

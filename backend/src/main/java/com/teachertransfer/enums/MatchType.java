@@ -7,10 +7,9 @@ import lombok.Getter;
  */
 @Getter
 public enum MatchType {
-    DIRECT(1, "Direct"),
-    ONE_WAY(2, "One-Way Interest"),
-    MUTUAL(3, "Mutual"),
-    MULTI_HOP(4, "Multi-Hop");
+    POTENTIAL(1, "Potential"),
+    INTEREST_SENT(2, "Interest Sent"),
+    MUTUAL(3, "Mutual");
 
     private final int code;
     private final String displayName;
@@ -26,6 +25,6 @@ public enum MatchType {
                 return type;
             }
         }
-        return DIRECT;
+        return POTENTIAL;
     }
 }

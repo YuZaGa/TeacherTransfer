@@ -76,8 +76,6 @@ app:
   # Matching Configuration
   matching:
     max-results: ${MATCHING_MAX_RESULTS:50}
-    max-hop-count: ${MATCHING_MAX_HOP_COUNT:3}
-    batch-timeout-ms: ${MATCHING_BATCH_TIMEOUT_MS:100}
 
 # Logging
 logging:

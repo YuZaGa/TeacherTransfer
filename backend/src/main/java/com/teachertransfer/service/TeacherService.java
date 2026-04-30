@@ -33,12 +33,13 @@ public class TeacherService {
     public TeacherResponse getTeacherProfile(Long teacherId) {
         Teacher teacher = teacherRepository.findById(teacherId)
                 .orElseThrow(() -> new RuntimeException("Teacher not found"));
-
+        touchInteraction(teacher);
         return mapToResponse(teacher);
     }
 
     public TeacherResponse getCurrentTeacherProfile() {
         Teacher teacher = getCurrentTeacher();
+        touchInteraction(teacher);
         return mapToResponse(teacher);
     }
 
@@ -46,45 +47,43 @@ public class TeacherService {
         Teacher teacher = teacherRepository.findById(teacherId)
                 .orElseThrow(() -> new RuntimeException("Teacher not found"));
 
-        // Update fields
-        if (updateRequest.getName() != null) {
-            teacher.setName(updateRequest.getName());
-        }
-        if (updateRequest.getEmail() != null) {
-            teacher.setEmail(updateRequest.getEmail());
-        }
-        if (updateRequest.getGender() != null) {
-            teacher.setGender(updateRequest.getGender().getCode());
-        }
-        if (updateRequest.getEmployeeId() != null) {
-            teacher.setEmployeeId(updateRequest.getEmployeeId());
-        }
-        if (updateRequest.getUdiseCode() != null) {
-            teacher.setUdiseCode(updateRequest.getUdiseCode());
-        }
-        if (updateRequest.getSchoolName() != null) {
-            teacher.setSchoolName(updateRequest.getSchoolName());
-        }
+        boolean locationOrPrefsChanged = false;
+
+        if (updateRequest.getName() != null) teacher.setName(updateRequest.getName());
+        if (updateRequest.getEmail() != null) teacher.setEmail(updateRequest.getEmail());
+        if (updateRequest.getGender() != null) teacher.setGender(updateRequest.getGender().getCode());
+        if (updateRequest.getEmployeeId() != null) teacher.setEmployeeId(updateRequest.getEmployeeId());
+        if (updateRequest.getUdiseCode() != null) teacher.setUdiseCode(updateRequest.getUdiseCode());
+        if (updateRequest.getSchoolName() != null) teacher.setSchoolName(updateRequest.getSchoolName());
         if (updateRequest.getSubject() != null) {
             teacher.setSubject(updateRequest.getSubject().getCode());
+            locationOrPrefsChanged = true;
         }
         if (updateRequest.getSchoolType() != null) {
             teacher.setSchoolType(updateRequest.getSchoolType().getCode());
+            locationOrPrefsChanged = true;
         }
         if (updateRequest.getCurrentLocation() != null) {
             teacher.setCurrentDistrictId(updateRequest.getCurrentLocation().getDistrictId());
             teacher.setCurrentBlockId(updateRequest.getCurrentLocation().getBlockId());
             teacher.setCurrentLat(updateRequest.getCurrentLocation().getLat());
             teacher.setCurrentLng(updateRequest.getCurrentLocation().getLng());
+            locationOrPrefsChanged = true;
         }
         if (updateRequest.getPreferredLocation() != null) {
             teacher.setPreferredDistrictId(updateRequest.getPreferredLocation().getDistrictId());
             teacher.setPreferredBlockId(updateRequest.getPreferredLocation().getBlockId());
             teacher.setPreferredLat(updateRequest.getPreferredLocation().getLat());
             teacher.setPreferredLng(updateRequest.getPreferredLocation().getLng());
+            locationOrPrefsChanged = true;
         }
         if (updateRequest.getRadiusKm() != null) {
             teacher.setRadiusKm(updateRequest.getRadiusKm());
+            locationOrPrefsChanged = true;
+        }
+
+        if (locationOrPrefsChanged) {
+            teacher.setProfileUpdatedAt(LocalDateTime.now());
         }
 
         teacher.setUpdatedAt(LocalDateTime.now());
@@ -99,6 +98,19 @@ public class TeacherService {
         Teacher teacher = teacherRepository.findById(teacherId)
                 .orElseThrow(() -> new RuntimeException("Teacher not found"));
         teacher.setLastLoginAt(LocalDateTime.now());
+        teacher.setLastInteractionAt(LocalDateTime.now());
+        teacherRepository.save(teacher);
+    }
+
+    public void touchInteraction(Long teacherId) {
+        Teacher teacher = teacherRepository.findById(teacherId).orElse(null);
+        if (teacher != null) {
+            touchInteraction(teacher);
+        }
+    }
+
+    public void touchInteraction(Teacher teacher) {
+        teacher.setLastInteractionAt(LocalDateTime.now());
         teacherRepository.save(teacher);
     }
 
@@ -109,6 +121,7 @@ public class TeacherService {
         teacher.setSubscriptionPlan(plan);
         teacher.setSubscriptionExpiresAt(expiresAt);
         teacherRepository.save(teacher);
+        updateGeoIndex(teacher);
     }
 
     public void updateTeacherStatus(Long teacherId, TeacherStatus status) {
@@ -134,14 +147,17 @@ public class TeacherService {
             geoIndex.setTeacherId(teacher.getId());
         }
 
-        String geohash = GeohashUtil.encode(teacher.getCurrentLat(), teacher.getCurrentLng());
+        String geohash = GeohashUtil.encode(teacher.getPreferredLat(), teacher.getPreferredLng());
         geoIndex.setGeohash(geohash);
         geoIndex.setSubject(teacher.getSubject());
         geoIndex.setSchoolType(teacher.getSchoolType());
+        geoIndex.setCurrentLat(teacher.getCurrentLat());
+        geoIndex.setCurrentLng(teacher.getCurrentLng());
         geoIndex.setPreferredLat(teacher.getPreferredLat());
         geoIndex.setPreferredLng(teacher.getPreferredLng());
-        geoIndex.setLocationType("CURRENT");
-        geoIndex.setIsPremium(teacher.getSubscriptionStatus() != null && teacher.getSubscriptionStatus() == SubscriptionStatus.PAID_ACTIVE.getCode());
+        geoIndex.setRadiusKm(teacher.getRadiusKm());
+        geoIndex.setIsPremium(teacher.getSubscriptionStatus() != null &&
+                teacher.getSubscriptionStatus() == SubscriptionStatus.PAID_ACTIVE.getCode());
 
         teacherGeoIndexRepository.save(geoIndex);
     }
@@ -170,7 +186,6 @@ public class TeacherService {
         response.setCreatedAt(teacher.getCreatedAt());
         response.setLastLoginAt(teacher.getLastLoginAt());
 
-        // Map current location
         if (teacher.getCurrentDistrictId() != null) {
             TeacherResponse.LocationInfo currentLocation = new TeacherResponse.LocationInfo();
             currentLocation.setDistrictId(teacher.getCurrentDistrictId());
@@ -180,7 +195,6 @@ public class TeacherService {
             response.setCurrentLocation(currentLocation);
         }
 
-        // Map preferred location
         if (teacher.getPreferredDistrictId() != null) {
             TeacherResponse.LocationInfo preferredLocation = new TeacherResponse.LocationInfo();
             preferredLocation.setDistrictId(teacher.getPreferredDistrictId());

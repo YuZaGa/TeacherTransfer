@@ -15,159 +15,76 @@ public class MatchResponse {
     private Double score;
     private Double distanceKm;
     private String matchReason;
-    private Integer hopCount;
+    private Boolean isMutual;
     private LocalDateTime createdAt;
 
     public MatchResponse() {}
 
-    // Getters and Setters
-    public Long getId() {
-        return id;
-    }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+    public Long getTeacherId() { return teacherId; }
+    public void setTeacherId(Long teacherId) { this.teacherId = teacherId; }
 
-    public Long getTeacherId() {
-        return teacherId;
-    }
+    public TeacherInfo getTeacher() { return teacher; }
+    public void setTeacher(TeacherInfo teacher) { this.teacher = teacher; }
 
-    public void setTeacherId(Long teacherId) {
-        this.teacherId = teacherId;
-    }
+    public MatchType getMatchType() { return matchType; }
+    public void setMatchType(MatchType matchType) { this.matchType = matchType; }
 
-    public TeacherInfo getTeacher() {
-        return teacher;
-    }
+    public Double getScore() { return score; }
+    public void setScore(Double score) { this.score = score; }
 
-    public void setTeacher(TeacherInfo teacher) {
-        this.teacher = teacher;
-    }
+    public Double getDistanceKm() { return distanceKm; }
+    public void setDistanceKm(Double distanceKm) { this.distanceKm = distanceKm; }
 
-    public MatchType getMatchType() {
-        return matchType;
-    }
+    public String getMatchReason() { return matchReason; }
+    public void setMatchReason(String matchReason) { this.matchReason = matchReason; }
 
-    public void setMatchType(MatchType matchType) {
-        this.matchType = matchType;
-    }
+    public Boolean getIsMutual() { return isMutual; }
+    public void setIsMutual(Boolean isMutual) { this.isMutual = isMutual; }
 
-    public Double getScore() {
-        return score;
-    }
-
-    public void setScore(Double score) {
-        this.score = score;
-    }
-
-    public Double getDistanceKm() {
-        return distanceKm;
-    }
-
-    public void setDistanceKm(Double distanceKm) {
-        this.distanceKm = distanceKm;
-    }
-
-    public String getMatchReason() {
-        return matchReason;
-    }
-
-    public void setMatchReason(String matchReason) {
-        this.matchReason = matchReason;
-    }
-
-    public Integer getHopCount() {
-        return hopCount;
-    }
-
-    public void setHopCount(Integer hopCount) {
-        this.hopCount = hopCount;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 
     public static class TeacherInfo {
         private Long id;
         private String name;
         private String subject;
         private String schoolType;
-        private String currentDistrict;
-        private String currentBlock;
-        private String preferredDistrict;
-        private String preferredBlock;
+        private String approxArea;
+        private Double distanceKm;
+        private String schoolName;
+        private String phone;
+        private Boolean identityRevealed;
 
         public TeacherInfo() {}
 
-        // Getters and Setters
-        public Long getId() {
-            return id;
-        }
+        public Long getId() { return id; }
+        public void setId(Long id) { this.id = id; }
 
-        public void setId(Long id) {
-            this.id = id;
-        }
+        public String getName() { return name; }
+        public void setName(String name) { this.name = name; }
 
-        public String getName() {
-            return name;
-        }
+        public String getSubject() { return subject; }
+        public void setSubject(String subject) { this.subject = subject; }
 
-        public void setName(String name) {
-            this.name = name;
-        }
+        public String getSchoolType() { return schoolType; }
+        public void setSchoolType(String schoolType) { this.schoolType = schoolType; }
 
-        public String getSubject() {
-            return subject;
-        }
+        public String getApproxArea() { return approxArea; }
+        public void setApproxArea(String approxArea) { this.approxArea = approxArea; }
 
-        public void setSubject(String subject) {
-            this.subject = subject;
-        }
+        public Double getDistanceKm() { return distanceKm; }
+        public void setDistanceKm(Double distanceKm) { this.distanceKm = distanceKm; }
 
-        public String getSchoolType() {
-            return schoolType;
-        }
+        public String getSchoolName() { return schoolName; }
+        public void setSchoolName(String schoolName) { this.schoolName = schoolName; }
 
-        public void setSchoolType(String schoolType) {
-            this.schoolType = schoolType;
-        }
+        public String getPhone() { return phone; }
+        public void setPhone(String phone) { this.phone = phone; }
 
-        public String getCurrentDistrict() {
-            return currentDistrict;
-        }
-
-        public void setCurrentDistrict(String currentDistrict) {
-            this.currentDistrict = currentDistrict;
-        }
-
-        public String getCurrentBlock() {
-            return currentBlock;
-        }
-
-        public void setCurrentBlock(String currentBlock) {
-            this.currentBlock = currentBlock;
-        }
-
-        public String getPreferredDistrict() {
-            return preferredDistrict;
-        }
-
-        public void setPreferredDistrict(String preferredDistrict) {
-            this.preferredDistrict = preferredDistrict;
-        }
-
-        public String getPreferredBlock() {
-            return preferredBlock;
-        }
-
-        public void setPreferredBlock(String preferredBlock) {
-            this.preferredBlock = preferredBlock;
-        }
+        public Boolean getIdentityRevealed() { return identityRevealed; }
+        public void setIdentityRevealed(Boolean identityRevealed) { this.identityRevealed = identityRevealed; }
     }
 }
