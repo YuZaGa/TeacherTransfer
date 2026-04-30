@@ -51,20 +51,24 @@ export default function Navbar() {
                         </div>
                     </div>
                     <div className="flex items-center space-x-4">
-                        <Link
-                            href="/login"
-                            className="text-gray-600 hover:text-blue-600 text-sm font-medium flex items-center"
-                        >
-                            <LogIn className="w-4 h-4 mr-1" />
-                            Login
-                        </Link>
-                        <Link
-                            href="/auth/otp"
-                            className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition shadow-sm flex items-center"
-                        >
-                            <UserPlus className="w-4 h-4 mr-1" />
-                            Register
-                        </Link>
+                        {pathname !== '/login' && (
+                            <>
+                                <Link
+                                    href="/login"
+                                    className="text-gray-600 hover:text-blue-600 text-sm font-medium flex items-center"
+                                >
+                                    <LogIn className="w-4 h-4 mr-1" />
+                                    Login
+                                </Link>
+                                <Link
+                                    href="/auth/otp"
+                                    className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition shadow-sm flex items-center"
+                                >
+                                    <UserPlus className="w-4 h-4 mr-1" />
+                                    Register
+                                </Link>
+                            </>
+                        )}
                     </div>
                 </div>
             </div>
