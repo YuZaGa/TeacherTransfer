@@ -1,10 +1,11 @@
-# Build stage
+# Dependencies stage
 FROM node:18-alpine AS deps
 RUN apk add --no-cache openssl
 WORKDIR /app
-COPY package.json ./
+COPY package.json package-lock.json* ./
 RUN npm install --legacy-peer-deps
 
+# Build stage
 FROM node:18-alpine AS builder
 RUN apk add --no-cache openssl
 WORKDIR /app

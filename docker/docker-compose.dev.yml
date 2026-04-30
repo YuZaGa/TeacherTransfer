@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      target: build
+    entrypoint: []
+    volumes:
+      - ../backend:/app
+      - maven_cache:/root/.m2
+    command: ["mvn", "spring-boot:run", "-Dspring-boot.run.jvmArguments=-Dspring.devtools.restart.enabled=true"]
+    environment:
+      - SPRING_DEVTOOLS_RESTART_ENABLED=true
+    healthcheck:
+      disable: true
+
+  frontend:
+    build:
+      target: deps
+    volumes:
+      - ../frontend:/app
+      - /app/node_modules
+    command: npm run dev
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8080/api
+      - BACKEND_API_URL=http://api:8080/api
+    healthcheck:
+      disable: true
+
+volumes:
+  maven_cache:
