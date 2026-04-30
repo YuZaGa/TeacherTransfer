@@ -18,7 +18,7 @@ interface Block {
 
 export default function ProfilePage() {
     const router = useRouter();
-    const { data: session } = useSession();
+    const { data: session, status: sessionStatus } = useSession();
     const [loading, setLoading] = useState(true);
     const [updating, setUpdating] = useState(false);
     const [error, setError] = useState('');
@@ -29,18 +29,21 @@ export default function ProfilePage() {
     const [preferredBlocks, setPreferredBlocks] = useState<Block[]>([]);
 
     useEffect(() => {
+        if (sessionStatus === 'unauthenticated') {
+            router.push('/login');
+            return;
+        }
+        if (sessionStatus !== 'authenticated') return;
+
         const fetchProfile = async () => {
             try {
                 const response = await api.get('/teacher/me');
                 const data = response.data.data;
-                // Flatten location for easier form handling if needed, or just update JSX
                 setTeacher(data);
 
-                // Fetch districts
                 const distRes = await api.get('/geography/districts');
                 setDistricts(distRes.data.data);
 
-                // Fetch initial blocks
                 if (data.currentLocation?.districtId) {
                     const blocksRes = await api.get(`/geography/districts/${data.currentLocation.districtId}/blocks`);
                     setCurrentBlocks(blocksRes.data.data);
@@ -50,7 +53,7 @@ export default function ProfilePage() {
                     setPreferredBlocks(blocksRes.data.data);
                 }
             } catch (err: any) {
-                setError('Failed to load profile. Please login again.');
+                setError('Failed to load profile. Please try again.');
                 if (err.response?.status === 401) {
                     router.push('/login');
                 }
@@ -60,7 +63,7 @@ export default function ProfilePage() {
         };
 
         fetchProfile();
-    }, [router]);
+    }, [router, sessionStatus]);
 
     const handleDistrictChange = async (districtId: string, type: 'current' | 'preferred') => {
         if (!districtId) return;
@@ -121,7 +124,21 @@ export default function ProfilePage() {
         );
     }
 
-    if (!teacher) return null;
+    if (!teacher) {
+        return (
+            <div className="max-w-md mx-auto mt-20 p-6 bg-white rounded-2xl shadow-lg border border-gray-100 text-center">
+                <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
+                <h2 className="text-xl font-bold text-gray-900 mb-2">Could not load profile</h2>
+                <p className="text-gray-500 mb-6">{error || 'An unexpected error occurred.'}</p>
+                <button
+                    onClick={() => window.location.reload()}
+                    className="px-6 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors"
+                >
+                    Retry
+                </button>
+            </div>
+        );
+    }
 
     return (
         <div className="max-w-5xl mx-auto p-6 md:p-8">

@@ -25,8 +25,8 @@ public class TeacherService {
 
     public Teacher getCurrentTeacher() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String phone = authentication.getName();
-        return teacherRepository.findByPhone(phone)
+        String email = authentication.getName();
+        return teacherRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Teacher not found"));
     }
 
