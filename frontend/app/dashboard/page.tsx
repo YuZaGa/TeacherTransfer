@@ -117,6 +117,9 @@ export default function DashboardPage() {
     const displayName = teacher?.name || session?.user?.name || 'Teacher';
     const userImage = session?.user?.image;
     const isPremium = teacher?.subscriptionStatus > 0;
+    const preferredArea = teacher?.preferredLocation?.blockName
+        || teacher?.preferredLocation?.districtName
+        || 'your area';
 
     return (
         <div className="min-h-screen bg-gray-50 pb-12">
@@ -160,7 +163,7 @@ export default function DashboardPage() {
                             <Search className="w-6 h-6" />
                         </div>
                         <p className="text-2xl font-bold text-gray-900">{discoveryMatches.length}</p>
-                        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Near Home</p>
+                        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Explore Nearby</p>
                     </div>
                     <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 text-center">
                         <div className="bg-green-50 p-2.5 rounded-xl text-green-600 inline-block mb-2">
@@ -191,10 +194,10 @@ export default function DashboardPage() {
                         <div className="flex items-center justify-between mb-4">
                             <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
                                 <MapPin className="text-blue-600 w-5 h-5" />
-                                Matches Near Your Home
+                                Teachers Near Your Home
                             </h2>
                             <Link href="/matches" className="text-sm font-bold text-blue-600 hover:text-blue-700">
-                                View All
+                                Browse All
                             </Link>
                         </div>
                         {discoveryMatches.length > 0 ? (
@@ -211,9 +214,10 @@ export default function DashboardPage() {
                             </div>
                         ) : (
                             <EmptyState
-                                message="No matches yet — start exploring nearby teachers"
-                                actionLabel="Find Matches"
+                                message="Browse teachers currently posted near your preferred location."
+                                actionLabel={`Browse Teachers Near ${preferredArea}`}
                                 actionHref="/matches"
+                                tip="Send interest to 3-5 teachers to increase your chances of matching."
                             />
                         )}
                     </section>
@@ -237,7 +241,8 @@ export default function DashboardPage() {
                             </div>
                         ) : (
                             <div className="bg-white rounded-2xl p-8 text-center border border-gray-100">
-                                <p className="text-gray-500">No mutual matches yet. Express interest in teachers near your home to build connections.</p>
+                                <p className="text-gray-600 mb-2">No mutual matches yet.</p>
+                                <p className="text-gray-400 text-sm">Express interest in teachers near your home. When they accept, contact details unlock here.</p>
                             </div>
                         )}
                     </section>
@@ -286,7 +291,8 @@ export default function DashboardPage() {
                             </div>
                         ) : (
                             <div className="bg-white rounded-2xl p-8 text-center border border-gray-100">
-                                <p className="text-gray-500">No interests received yet.</p>
+                                <p className="text-gray-600 mb-2">No interests received yet.</p>
+                                <p className="text-gray-400 text-sm">When teachers discover you and express interest, their requests appear here.</p>
                             </div>
                         )}
                     </section>
@@ -328,7 +334,8 @@ export default function DashboardPage() {
                             </div>
                         ) : (
                             <div className="bg-white rounded-2xl p-8 text-center border border-gray-100">
-                                <p className="text-gray-500">No interests sent yet.</p>
+                                <p className="text-gray-600 mb-2">No interests sent yet.</p>
+                                <p className="text-gray-400 text-sm">Browse teachers near your home and express interest to start connecting.</p>
                             </div>
                         )}
                     </section>
@@ -435,7 +442,7 @@ function MutualMatchCard({ match }: { match: any }) {
     );
 }
 
-function EmptyState({ message, actionLabel, actionHref }: { message: string; actionLabel: string; actionHref: string }) {
+function EmptyState({ message, actionLabel, actionHref, tip }: { message: string; actionLabel: string; actionHref: string; tip?: string }) {
     return (
         <div className="bg-white rounded-2xl p-12 text-center border border-dashed border-gray-200">
             <div className="inline-block p-4 bg-gray-50 rounded-full mb-4">
@@ -445,6 +452,9 @@ function EmptyState({ message, actionLabel, actionHref }: { message: string; act
             <Link href={actionHref} className="inline-block px-6 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors">
                 {actionLabel}
             </Link>
+            {tip && (
+                <p className="text-sm text-gray-400 mt-4 italic">{tip}</p>
+            )}
         </div>
     );
 }

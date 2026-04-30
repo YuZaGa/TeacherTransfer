@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import {
     Search,
-    Filter,
     MapPin,
     Loader2,
     Heart,
@@ -14,7 +13,8 @@ import {
     CheckCircle2,
     ShieldCheck,
     Eye,
-    Shield
+    Shield,
+    Lightbulb
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -29,17 +29,20 @@ export default function MatchesPage() {
     const [interestSentMatches, setInterestSentMatches] = useState<any[]>([]);
     const [sendingInterest, setSendingInterest] = useState<number | null>(null);
     const [sentInterestIds, setSentInterestIds] = useState<Set<number>>(new Set());
+    const [teacher, setTeacher] = useState<any>(null);
 
     useEffect(() => {
         const fetchAll = async () => {
             try {
-                const [discRes, mutRes, sentRes, sntInterestRes] = await Promise.all([
+                const [meRes, discRes, mutRes, sentRes, sntInterestRes] = await Promise.all([
+                    api.get('/teacher/me'),
                     api.get('/matches'),
                     api.get('/matches/mutual'),
                     api.get('/matches/interest-sent'),
                     api.get('/interest/sent')
                 ]);
 
+                setTeacher(meRes.data.data);
                 setDiscoveryMatches(discRes.data.data || []);
                 setMutualMatches(mutRes.data.data || []);
                 setInterestSentMatches(sentRes.data.data || []);
@@ -84,6 +87,10 @@ export default function MatchesPage() {
         : tab === 'mutual' ? mutualMatches
         : interestSentMatches;
 
+    const preferredArea = teacher?.preferredLocation?.blockName
+        || teacher?.preferredLocation?.districtName
+        || 'your area';
+
     return (
         <div className="min-h-screen bg-gray-50 pb-20">
             <header className="bg-white border-b sticky top-0 z-10">
@@ -92,35 +99,54 @@ export default function MatchesPage() {
                         <Link href="/dashboard" className="p-2 hover:bg-gray-100 rounded-full transition-colors">
                             <ArrowLeft className="w-6 h-6 text-gray-600" />
                         </Link>
-                        <h1 className="text-2xl font-bold text-gray-900">Matches</h1>
+                        <h1 className="text-2xl font-bold text-gray-900">Find Matches</h1>
                     </div>
                 </div>
             </header>
 
             <main className="max-w-5xl mx-auto px-4 pt-6">
-                <div className="flex p-1 bg-gray-200 rounded-2xl mb-6 w-fit mx-auto sm:mx-0">
+                <div className="flex p-1 bg-gray-200 rounded-2xl mb-4 w-fit mx-auto sm:mx-0">
                     <button
                         onClick={() => setTab('discovery')}
-                        className={`px-6 py-3 rounded-xl font-bold text-sm transition-all flex items-center gap-1.5 ${tab === 'discovery' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                        className={`px-5 py-3 rounded-xl font-bold text-sm transition-all flex items-center gap-1.5 ${tab === 'discovery' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                     >
                         <MapPin className="w-4 h-4" />
-                        Near Home ({discoveryMatches.length})
+                        Nearby Teachers ({discoveryMatches.length})
                     </button>
                     <button
                         onClick={() => setTab('mutual')}
-                        className={`px-6 py-3 rounded-xl font-bold text-sm transition-all flex items-center gap-1.5 ${tab === 'mutual' ? 'bg-white text-green-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                        className={`px-5 py-3 rounded-xl font-bold text-sm transition-all flex items-center gap-1.5 ${tab === 'mutual' ? 'bg-white text-green-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                     >
                         <ShieldCheck className="w-4 h-4" />
-                        Mutual ({mutualMatches.length})
+                        Mutual Matches ({mutualMatches.length})
                     </button>
                     <button
                         onClick={() => setTab('interest-sent')}
-                        className={`px-6 py-3 rounded-xl font-bold text-sm transition-all flex items-center gap-1.5 ${tab === 'interest-sent' ? 'bg-white text-purple-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                        className={`px-5 py-3 rounded-xl font-bold text-sm transition-all flex items-center gap-1.5 ${tab === 'interest-sent' ? 'bg-white text-purple-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                     >
                         <Eye className="w-4 h-4" />
                         Sent ({interestSentMatches.length})
                     </button>
                 </div>
+
+                {tab === 'discovery' && (
+                    <div className="mb-6 bg-blue-50 border border-blue-100 rounded-xl px-4 py-3 text-sm text-blue-700">
+                        Showing teachers currently posted near your preferred location ({preferredArea}).
+                        Send interest to connect — contact details unlock on mutual match.
+                    </div>
+                )}
+
+                {tab === 'mutual' && mutualMatches.length > 0 && (
+                    <div className="mb-6 bg-green-50 border border-green-100 rounded-xl px-4 py-3 text-sm text-green-700">
+                        These teachers want a transfer near you, and you want a transfer near them. Contact details are unlocked.
+                    </div>
+                )}
+
+                {tab === 'interest-sent' && (
+                    <div className="mb-6 bg-purple-50 border border-purple-100 rounded-xl px-4 py-3 text-sm text-purple-700">
+                        Teachers you have expressed interest in. Waiting for their response to unlock contact details.
+                    </div>
+                )}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {currentMatches.map((match: any) => {
@@ -150,11 +176,9 @@ export default function MatchesPage() {
                                         </p>
                                         <p className="text-sm text-gray-500">{t.approxArea || 'Nearby'}</p>
                                     </div>
-                                    <div className="flex gap-2">
-                                        <span className="text-xs font-bold px-2 py-1 bg-blue-50 text-blue-600 rounded-full">
-                                            {t.schoolType}
-                                        </span>
-                                    </div>
+                                    <span className="text-xs font-bold px-2 py-1 bg-blue-50 text-blue-600 rounded-full">
+                                        {t.schoolType}
+                                    </span>
                                 </div>
 
                                 <div className="space-y-1.5 mb-4">
@@ -225,23 +249,29 @@ export default function MatchesPage() {
                                 <Search className="w-10 h-10 text-gray-300" />
                             </div>
                             <h3 className="text-2xl font-bold text-gray-900">
-                                {tab === 'discovery' ? 'No matches yet' :
+                                {tab === 'discovery' ? 'No teachers found nearby' :
                                  tab === 'mutual' ? 'No mutual matches yet' :
                                  'No interests sent yet'}
                             </h3>
-                            <p className="text-gray-500 mt-2 max-w-sm mx-auto font-medium">
+                            <p className="text-gray-500 mt-2 max-w-md mx-auto font-medium">
                                 {tab === 'discovery'
-                                    ? 'Start exploring nearby teachers to find transfer opportunities.'
+                                    ? `Start by browsing teachers posted near ${preferredArea}. Express interest to unlock mutual matches.`
                                     : tab === 'mutual'
-                                    ? 'Express interest in matches near your home to build mutual connections.'
-                                    : 'Browse matches and express interest to see them here.'}
+                                    ? 'Express interest in nearby teachers. When they accept, contact details unlock here.'
+                                    : 'Browse nearby teachers and express interest to see them here.'}
                             </p>
+                            {tab === 'discovery' && (
+                                <p className="text-sm text-gray-400 mt-3 italic flex items-center justify-center gap-1.5">
+                                    <Lightbulb className="w-4 h-4" />
+                                    Send interest to 3-5 teachers to increase your chances of matching
+                                </p>
+                            )}
                             {tab !== 'discovery' && (
                                 <button
                                     onClick={() => setTab('discovery')}
                                     className="mt-6 inline-block px-6 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors"
                                 >
-                                    Find Matches
+                                    Browse Teachers
                                 </button>
                             )}
                         </div>

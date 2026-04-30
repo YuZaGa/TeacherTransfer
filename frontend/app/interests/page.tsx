@@ -207,15 +207,17 @@ export default function InterestsPage() {
                                     : <Send className="w-10 h-10 text-gray-300" />
                                 }
                             </div>
-                            <h3 className="text-xl font-bold text-gray-900">No {tab} interests yet</h3>
-                            <p className="text-gray-500 mt-2 max-w-xs mx-auto font-medium">
+                            <h3 className="text-xl font-bold text-gray-900">
+                                {tab === 'received' ? 'No interests received yet' : 'No interests sent yet'}
+                            </h3>
+                            <p className="text-gray-500 mt-2 max-w-sm mx-auto font-medium">
                                 {tab === 'received'
-                                    ? "When other teachers find you and express interest, they will appear here."
-                                    : "Browse for matches and express interest to see them here."}
+                                    ? "When teachers discover you and express interest, their requests appear here. Accept to unlock their contact details."
+                                    : "Browse teachers near your home and express interest to start connecting."}
                             </p>
                             {tab === 'sent' && (
                                 <Link href="/matches" className="mt-6 inline-block px-8 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors">
-                                    Find Matches
+                                    Browse Teachers
                                 </Link>
                             )}
                         </div>
