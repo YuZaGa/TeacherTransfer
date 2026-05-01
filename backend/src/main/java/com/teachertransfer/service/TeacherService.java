@@ -4,6 +4,8 @@ import com.teachertransfer.dto.teacher.TeacherResponse;
 import com.teachertransfer.entity.Teacher;
 import com.teachertransfer.entity.TeacherGeoIndex;
 import com.teachertransfer.enums.*;
+import com.teachertransfer.entity.Block;
+import com.teachertransfer.repository.BlockRepository;
 import com.teachertransfer.repository.TeacherGeoIndexRepository;
 import com.teachertransfer.repository.TeacherRepository;
 import com.teachertransfer.util.GeohashUtil;
@@ -22,6 +24,9 @@ public class TeacherService {
 
     @Autowired
     private TeacherGeoIndexRepository teacherGeoIndexRepository;
+
+    @Autowired
+    private BlockRepository blockRepository;
 
     public Teacher getCurrentTeacher() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -70,12 +75,30 @@ public class TeacherService {
             teacher.setCurrentLng(updateRequest.getCurrentLocation().getLng());
             locationOrPrefsChanged = true;
         }
+        if (teacher.getCurrentLat() == null || teacher.getCurrentLng() == null) {
+            if (teacher.getCurrentBlockId() != null) {
+                Block currentBlock = blockRepository.findById(teacher.getCurrentBlockId()).orElse(null);
+                if (currentBlock != null) {
+                    if (teacher.getCurrentLat() == null) teacher.setCurrentLat(currentBlock.getLat());
+                    if (teacher.getCurrentLng() == null) teacher.setCurrentLng(currentBlock.getLng());
+                }
+            }
+        }
         if (updateRequest.getPreferredLocation() != null) {
             teacher.setPreferredDistrictId(updateRequest.getPreferredLocation().getDistrictId());
             teacher.setPreferredBlockId(updateRequest.getPreferredLocation().getBlockId());
             teacher.setPreferredLat(updateRequest.getPreferredLocation().getLat());
             teacher.setPreferredLng(updateRequest.getPreferredLocation().getLng());
             locationOrPrefsChanged = true;
+        }
+        if (teacher.getPreferredLat() == null || teacher.getPreferredLng() == null) {
+            if (teacher.getPreferredBlockId() != null) {
+                Block preferredBlock = blockRepository.findById(teacher.getPreferredBlockId()).orElse(null);
+                if (preferredBlock != null) {
+                    if (teacher.getPreferredLat() == null) teacher.setPreferredLat(preferredBlock.getLat());
+                    if (teacher.getPreferredLng() == null) teacher.setPreferredLng(preferredBlock.getLng());
+                }
+            }
         }
         if (updateRequest.getRadiusKm() != null) {
             teacher.setRadiusKm(updateRequest.getRadiusKm());

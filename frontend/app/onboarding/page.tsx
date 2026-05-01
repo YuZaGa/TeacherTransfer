@@ -3,35 +3,72 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
+import LocationPicker, { District, Block } from '@/components/LocationPicker';
 import { User, School, MapPin, Phone, Save, AlertCircle, Loader2 } from 'lucide-react';
 
 const SUBJECTS = [
-    { value: 'HINDI', label: 'Hindi' },
+    { value: 'ACCOUNTANCY', label: 'Accountancy' },
+    { value: 'AGRICULTURE', label: 'Agriculture' },
+    { value: 'ARABIC', label: 'Arabic' },
+    { value: 'AUTOMOTIVE', label: 'Automotive' },
+    { value: 'BENGALI', label: 'Bangla / Bengali' },
+    { value: 'BANKING_INSURANCE', label: 'Banking & Insurance' },
+    { value: 'BEAUTY_WELLNESS', label: 'Beauty and Wellness' },
+    { value: 'BIOLOGY', label: 'Biology' },
+    { value: 'BHOJPURI', label: 'Bhojpuri' },
+    { value: 'BOTANY', label: 'Botany' },
+    { value: 'BUSINESS_STUDIES', label: 'Business Studies' },
+    { value: 'CHEMISTRY', label: 'Chemistry' },
+    { value: 'COMPUTER_SCIENCE', label: 'Computer Science' },
+    { value: 'DANCE', label: 'Dance' },
+    { value: 'DATA_SCIENCE', label: 'Data Science' },
+    { value: 'ECONOMICS', label: 'Economics' },
+    { value: 'ELECTRICAL_ELECTRONICS', label: 'Electrical & Electronics Technology' },
     { value: 'ENGLISH', label: 'English' },
+    { value: 'ENTREPRENEURSHIP', label: 'Entrepreneurship' },
+    { value: 'ENVIRONMENTAL_STUDIES', label: 'Environmental Studies (EVS)' },
+    { value: 'FASHION_STUDIES', label: 'Fashion Studies' },
+    { value: 'FINE_ARTS', label: 'Fine Arts / Painting' },
+    { value: 'FOOD_PRODUCTION', label: 'Food Production' },
+    { value: 'GEOGRAPHY', label: 'Geography' },
+    { value: 'HEALTHCARE', label: 'Healthcare' },
+    { value: 'HINDI', label: 'Hindi' },
+    { value: 'HISTORY', label: 'History' },
+    { value: 'HOME_SCIENCE', label: 'Home Science' },
+    { value: 'HORTICULTURE', label: 'Horticulture & Floriculture' },
+    { value: 'INFORMATICS_PRACTICES', label: 'Informatics Practices' },
+    { value: 'LIBRARY_SCIENCE', label: 'Library and Information Science' },
+    { value: 'MAGAHI', label: 'Magahi' },
+    { value: 'MAITHILI', label: 'Maithili' },
+    { value: 'MARKETING', label: 'Marketing' },
+    { value: 'MASS_MEDIA', label: 'Mass Media Studies' },
     { value: 'MATHEMATICS', label: 'Mathematics' },
-    { value: 'SCIENCE', label: 'Science' },
-    { value: 'SOCIAL_SCIENCE', label: 'Social Science' },
-    { value: 'PRIMARY', label: 'Primary Teacher (1-5)' },
-    { value: 'OTHER', label: 'Other' },
+    { value: 'MULTIMEDIA_WEB_TECH', label: 'Multimedia & Web Technology' },
+    { value: 'MUSIC', label: 'Music' },
+    { value: 'PALI', label: 'Pali' },
+    { value: 'PERSIAN', label: 'Persian / Farsi' },
+    { value: 'PHILOSOPHY', label: 'Philosophy' },
+    { value: 'PHYSICAL_EDUCATION', label: 'Physical Education & Yoga' },
+    { value: 'PHYSICS', label: 'Physics' },
+    { value: 'POLITICAL_SCIENCE', label: 'Political Science / Civics' },
+    { value: 'PRAKRIT', label: 'Prakrit' },
+    { value: 'PSYCHOLOGY', label: 'Psychology' },
+    { value: 'RETAIL', label: 'Retail' },
+    { value: 'SANSKRIT', label: 'Sanskrit' },
+    { value: 'SOCIOLOGY', label: 'Sociology' },
+    { value: 'STENOGRAPHY', label: 'Stenography / Shorthand (Hindi/English)' },
+    { value: 'TAXATION', label: 'Taxation' },
+    { value: 'TOURISM', label: 'Tourism' },
+    { value: 'URDU', label: 'Urdu' },
+    { value: 'ZOOLOGY', label: 'Zoology' },
 ];
 
 const SCHOOL_TYPES = [
     { value: 'PRIMARY', label: 'Primary School (1-5)' },
     { value: 'MIDDLE', label: 'Middle School (6-8)' },
     { value: 'HIGH', label: 'High School (9-10)' },
-    { value: 'SENIOR', label: '+2 School (11-12)' },
-    { value: 'OTHER', label: 'Other' },
+    { value: 'PLUS_TWO', label: '+2 School (11-12)' },
 ];
-
-interface District {
-    id: number;
-    name: string;
-}
-
-interface Block {
-    id: number;
-    name: string;
-}
 
 export default function OnboardingPage() {
     const router = useRouter();
@@ -47,10 +84,14 @@ export default function OnboardingPage() {
         schoolName: '',
         subject: 'HINDI',
         schoolType: 'PRIMARY',
-        currentDistrictId: '',
-        currentBlockId: '',
-        preferredDistrictId: '',
-        preferredBlockId: '',
+        currentDistrictId: null as number | null,
+        currentBlockId: null as number | null,
+        currentLat: null as number | null,
+        currentLng: null as number | null,
+        preferredDistrictId: null as number | null,
+        preferredBlockId: null as number | null,
+        preferredLat: null as number | null,
+        preferredLng: null as number | null,
         radiusKm: '30',
     });
 
@@ -70,27 +111,54 @@ export default function OnboardingPage() {
         fetchDistricts();
     }, []);
 
-    const handleDistrictChange = async (districtId: string, type: 'current' | 'preferred') => {
-        if (type === 'current') {
-            setFormData({ ...formData, currentDistrictId: districtId, currentBlockId: '' });
-            setCurrentBlocks([]);
-        } else {
-            setFormData({ ...formData, preferredDistrictId: districtId, preferredBlockId: '' });
-            setPreferredBlocks([]);
-        }
-        
-        if (!districtId) return;
-
+    const handleCurrentDistrictChange = async (districtId: number) => {
+        setFormData({ ...formData, currentDistrictId: districtId, currentBlockId: null, currentLat: null, currentLng: null });
+        setCurrentBlocks([]);
         try {
             const res = await api.get(`/geography/districts/${districtId}/blocks`);
-            if (type === 'current') {
-                setCurrentBlocks(res.data.data || []);
-            } else {
-                setPreferredBlocks(res.data.data || []);
-            }
+            setCurrentBlocks(res.data.data || []);
         } catch (err) {
             console.error("Failed to fetch blocks", err);
         }
+    };
+
+    const handlePreferredDistrictChange = async (districtId: number) => {
+        setFormData({ ...formData, preferredDistrictId: districtId, preferredBlockId: null, preferredLat: null, preferredLng: null });
+        setPreferredBlocks([]);
+        try {
+            const res = await api.get(`/geography/districts/${districtId}/blocks`);
+            setPreferredBlocks(res.data.data || []);
+        } catch (err) {
+            console.error("Failed to fetch blocks", err);
+        }
+    };
+
+    const handleCurrentBlockChange = (blockId: number) => {
+        const block = currentBlocks.find(b => b.id === blockId);
+        setFormData({
+            ...formData,
+            currentBlockId: blockId,
+            currentLat: block?.lat || null,
+            currentLng: block?.lng || null,
+        });
+    };
+
+    const handlePreferredBlockChange = (blockId: number) => {
+        const block = preferredBlocks.find(b => b.id === blockId);
+        setFormData({
+            ...formData,
+            preferredBlockId: blockId,
+            preferredLat: block?.lat || null,
+            preferredLng: block?.lng || null,
+        });
+    };
+
+    const handleCurrentLocationMapChange = (lat: number, lng: number) => {
+        setFormData({ ...formData, currentLat: lat, currentLng: lng });
+    };
+
+    const handlePreferredLocationMapChange = (lat: number, lng: number) => {
+        setFormData({ ...formData, preferredLat: lat, preferredLng: lng });
     };
 
     const validatePhone = (phone: string) => {
@@ -164,7 +232,6 @@ export default function OnboardingPage() {
                         </div>
                     )}
 
-                    {/* Personal Info */}
                     <section className="space-y-5">
                         <h2 className="flex items-center text-lg font-bold text-gray-900 pb-2 border-b border-gray-200">
                             <User className="w-5 h-5 mr-2 text-blue-600" />
@@ -236,7 +303,6 @@ export default function OnboardingPage() {
                         </div>
                     </section>
 
-                    {/* School Details */}
                     <section className="space-y-5">
                         <h2 className="flex items-center text-lg font-bold text-gray-900 pb-2 border-b border-gray-200">
                             <School className="w-5 h-5 mr-2 text-blue-600" />
@@ -277,61 +343,66 @@ export default function OnboardingPage() {
                         </div>
                     </section>
 
-                    {/* Location */}
-                    <section className="space-y-5">
+                    <section className="space-y-6">
                         <h2 className="flex items-center text-lg font-bold text-gray-900 pb-2 border-b border-gray-200">
                             <MapPin className="w-5 h-5 mr-2 text-blue-600" />
                             Location Preferences
                         </h2>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Current District</label>
-                                <select
-                                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                                    value={formData.currentDistrictId}
-                                    onChange={e => handleDistrictChange(e.target.value, 'current')}
-                                >
-                                    <option value="">Select District</option>
-                                    {districts.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
-                                </select>
+
+                        <LocationPicker
+                            label="Current Location"
+                            hint="Where you are currently posted. Select your block and adjust the pin to your school."
+                            districts={districts}
+                            blocks={currentBlocks}
+                            selectedDistrictId={formData.currentDistrictId}
+                            selectedBlockId={formData.currentBlockId}
+                            lat={formData.currentLat}
+                            lng={formData.currentLng}
+                            mapHeight="h-48"
+                            onDistrictChange={handleCurrentDistrictChange}
+                            onBlockChange={handleCurrentBlockChange}
+                            onLocationChange={handleCurrentLocationMapChange}
+                        />
+
+                        <LocationPicker
+                            label="Preferred Transfer Location"
+                            hint="Where you want to transfer. Matches will be shown based on this location."
+                            districts={districts}
+                            blocks={preferredBlocks}
+                            selectedDistrictId={formData.preferredDistrictId}
+                            selectedBlockId={formData.preferredBlockId}
+                            lat={formData.preferredLat}
+                            lng={formData.preferredLng}
+                            mapHeight="h-56"
+                            onDistrictChange={handlePreferredDistrictChange}
+                            onBlockChange={handlePreferredBlockChange}
+                            onLocationChange={handlePreferredLocationMapChange}
+                        />
+
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                Search Radius: {formData.radiusKm} km
+                            </label>
+                            <div className="flex items-center gap-4">
+                                <input
+                                    type="range"
+                                    min="5"
+                                    max="100"
+                                    step="5"
+                                    className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                                    value={formData.radiusKm}
+                                    onChange={e => setFormData({ ...formData, radiusKm: e.target.value })}
+                                />
+                                <span className="w-12 text-center font-bold text-blue-600 bg-blue-50 py-1 rounded">
+                                    {formData.radiusKm}
+                                </span>
                             </div>
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Current Block</label>
-                                <select
-                                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                                    value={formData.currentBlockId}
-                                    onChange={e => setFormData({ ...formData, currentBlockId: e.target.value })}
-                                >
-                                    <option value="">Select Block</option>
-                                    {currentBlocks.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Preferred Transfer District</label>
-                                <select
-                                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                                    value={formData.preferredDistrictId}
-                                    onChange={e => handleDistrictChange(e.target.value, 'preferred')}
-                                >
-                                    <option value="">Select District</option>
-                                    {districts.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Preferred Transfer Block</label>
-                                <select
-                                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                                    value={formData.preferredBlockId}
-                                    onChange={e => setFormData({ ...formData, preferredBlockId: e.target.value })}
-                                >
-                                    <option value="">Select Block</option>
-                                    {preferredBlocks.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
-                                </select>
-                            </div>
+                            <p className="text-xs text-gray-400 mt-2">
+                                Matches will be found within this distance from your preferred location.
+                            </p>
                         </div>
                     </section>
 
-                    {/* Submit */}
                     <div className="pt-4">
                         <button
                             type="submit"

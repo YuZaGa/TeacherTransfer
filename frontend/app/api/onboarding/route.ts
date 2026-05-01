@@ -24,8 +24,12 @@ export async function POST(req: Request) {
             schoolType,
             currentDistrictId,
             currentBlockId,
+            currentLat,
+            currentLng,
             preferredDistrictId,
             preferredBlockId,
+            preferredLat,
+            preferredLng,
             radiusKm,
         } = body;
 
@@ -56,10 +60,14 @@ export async function POST(req: Request) {
                 currentLocation: {
                     districtId: currentDistrictId ? parseInt(currentDistrictId) : null,
                     blockId: currentBlockId ? parseInt(currentBlockId) : null,
+                    lat: currentLat ? parseFloat(currentLat) : null,
+                    lng: currentLng ? parseFloat(currentLng) : null,
                 },
                 preferredLocation: {
                     districtId: preferredDistrictId ? parseInt(preferredDistrictId) : null,
                     blockId: preferredBlockId ? parseInt(preferredBlockId) : null,
+                    lat: preferredLat ? parseFloat(preferredLat) : null,
+                    lng: preferredLng ? parseFloat(preferredLng) : null,
                 },
                 radiusKm: radiusKm ? parseInt(radiusKm) : 30,
             }),

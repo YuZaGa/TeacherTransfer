@@ -37,21 +37,9 @@ public class TestDataConfig {
                 return;
             }
 
-            // Districts and Blocks are usually pre-populated, but let's ensure some exist
-            // If they don't, we might need to add them here or assume they exist from other migrations/initialization
-
             List<District> districts = districtRepository.findAll();
-            if (districts.isEmpty()) {
-                System.out.println("No districts found. Please populate districts/blocks first.");
-                return;
-            }
-
             District d1 = districts.get(0);
             List<Block> blocks = blockRepository.findByDistrictId(d1.getId());
-            if (blocks.size() < 2) {
-                System.out.println("Not enough blocks in district " + d1.getName() + " for testing.");
-                return;
-            }
 
             Block b1 = blocks.get(0);
             Block b2 = blocks.get(1);
