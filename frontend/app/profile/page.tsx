@@ -497,8 +497,8 @@ export default function ProfilePage() {
                             <h3 className="text-lg font-bold text-gray-900">Confirm Update</h3>
                         </div>
                         <p className="text-gray-600 mb-6">
-                            Changing your location, subject, school type, or search radius will reset your matches and interests.
-                            You will need to re-discover and re-express interest in teachers.
+                            Changing your location, subject, school type, or search radius will reset your current matches.
+                            You will need to re-discover teachers after the update. Your existing interest requests are preserved.
                         </p>
                         <div className="flex gap-3">
                             <button

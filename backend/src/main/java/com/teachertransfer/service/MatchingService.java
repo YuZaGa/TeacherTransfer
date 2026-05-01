@@ -16,12 +16,14 @@ import com.teachertransfer.util.GeohashUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional
 public class MatchingService {
 
     @Autowired
@@ -84,6 +86,8 @@ public class MatchingService {
     }
 
     private List<MatchResult> generateAndCacheMatches(Teacher teacher) {
+        matchResultRepository.deleteByTeacherId(teacher.getId());
+
         Set<String> searchArea = GeohashUtil.encodeWithNeighbors(
                 teacher.getPreferredLat(), teacher.getPreferredLng()
         );

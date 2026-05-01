@@ -33,7 +33,7 @@ public class TestDataConfig {
             DistrictRepository districtRepository,
             BlockRepository blockRepository) {
         return args -> {
-            if (teacherRepository.count() > 0) {
+            if (teacherRepository.findByPhone("9988776655").isPresent()) {
                 return;
             }
 

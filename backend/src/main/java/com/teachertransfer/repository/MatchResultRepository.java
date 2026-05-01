@@ -2,6 +2,7 @@ package com.teachertransfer.repository;
 
 import com.teachertransfer.entity.MatchResult;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -30,5 +31,7 @@ public interface MatchResultRepository extends JpaRepository<MatchResult, Long> 
     List<MatchResult> findValidMatches(@Param("teacherId") Long teacherId,
                                        @Param("profileUpdatedAt") LocalDateTime profileUpdatedAt);
 
-    void deleteByTeacherId(Long teacherId);
+    @Modifying
+    @Query("DELETE FROM MatchResult m WHERE m.teacherId = :teacherId")
+    void deleteByTeacherId(@Param("teacherId") Long teacherId);
 }
