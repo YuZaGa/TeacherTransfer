@@ -50,23 +50,6 @@ export default function LoginPage() {
 
     return (
         <div className="min-h-screen flex flex-col bg-gray-50">
-            {/* Navbar */}
-            <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between h-16">
-                        <div className="flex items-center">
-                            <Link href="/" className="flex-shrink-0 flex items-center">
-                                <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                                    TeacherTransfer
-                                </span>
-                            </Link>
-
-                        </div>
-                        {/* No Login/Register buttons on the login page */}
-                    </div>
-                </div>
-            </nav>
-
             {/* Main Content */}
             <main className="flex-1 flex items-center justify-center py-12 px-4">
                 <div className="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">

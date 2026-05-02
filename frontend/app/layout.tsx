@@ -1,10 +1,16 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import Providers from '@/components/Providers'
+import Navbar from '@/components/Navbar'
 
 export const metadata: Metadata = {
   title: 'TeacherTransfer',
   description: 'A peer-to-peer web platform enabling Bihar government school teachers to discover mutual transfer opportunities.',
+  icons: {
+    icon: [
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+    ],
+  },
 }
 
 export default function RootLayout({
@@ -16,6 +22,7 @@ export default function RootLayout({
     <html lang="en">
       <body className="bg-gray-50 text-gray-900 antialiased">
         <Providers>
+          <Navbar />
           {children}
         </Providers>
       </body>

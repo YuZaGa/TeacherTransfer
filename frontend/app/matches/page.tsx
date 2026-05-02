@@ -9,7 +9,6 @@ import {
     Loader2,
     Heart,
     SkipForward,
-    ArrowLeft,
     CheckCircle2,
     ShieldCheck,
     Eye,
@@ -93,17 +92,6 @@ export default function MatchesPage() {
 
     return (
         <div className="min-h-screen bg-gray-50 pb-20">
-            <header className="bg-white border-b sticky top-0 z-10">
-                <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <Link href="/dashboard" className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-                            <ArrowLeft className="w-6 h-6 text-gray-600" />
-                        </Link>
-                        <h1 className="text-2xl font-bold text-gray-900">Find Matches</h1>
-                    </div>
-                </div>
-            </header>
-
             <main className="max-w-5xl mx-auto px-4 pt-6">
                 <div className="flex p-1 bg-gray-200 rounded-2xl mb-4 w-fit mx-auto sm:mx-0">
                     <button

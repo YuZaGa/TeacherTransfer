@@ -86,6 +86,7 @@ public class TestDataConfig {
         t.setPreferredDistrictId(preferredDistrict);
         t.setPreferredBlockId(preferredBlock);
         t.setStatus(TeacherStatus.ACTIVE.getCode());
+        t.setOnboardingCompleted(true);
         t.setSubscriptionStatus(SubscriptionStatus.PAID_ACTIVE.getCode());
         t.setRadiusKm(50);
         t.setCreatedAt(LocalDateTime.now());

@@ -134,6 +134,7 @@ public class TestMatchingDataConfig {
                 t.setPreferredLng(s.preferredLng);
                 t.setRadiusKm(s.radiusKm);
                 t.setStatus(TeacherStatus.ACTIVE.getCode());
+                t.setOnboardingCompleted(true);
                 t.setSubscriptionStatus(SubscriptionStatus.PAID_ACTIVE.getCode());
                 t.setPhoneVerified(true);
                 t.setCreatedAt(LocalDateTime.now());

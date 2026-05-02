@@ -4,26 +4,6 @@ import { ArrowRight, UserPlus, Sliders, CheckCircle, ArrowRightLeft, Map } from 
 export default function Home() {
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
-            {/* Header / Navbar */}
-            <header className="bg-white border-b sticky top-0 z-50">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-                    <div className="flex items-center gap-2">
-                        <div className="bg-blue-600 p-2 rounded-lg">
-                            <ArrowRightLeft className="text-white w-6 h-6" />
-                        </div>
-                        <span className="text-xl font-bold text-gray-900 tracking-tight">TeacherTransfer</span>
-                    </div>
-                    <div className="flex items-center gap-4">
-                        <Link href="/login" className="text-gray-600 font-semibold hover:text-blue-600 transition-colors">
-                            Login
-                        </Link>
-                        <Link href="/login" className="bg-blue-600 text-white px-5 py-2 rounded-lg font-bold hover:bg-blue-700 transition-colors shadow-sm">
-                            Get Started
-                        </Link>
-                    </div>
-                </div>
-            </header>
-
             <main className="flex-1">
                 {/* Hero Section */}
                 <section className="bg-gradient-to-br from-blue-50 to-indigo-50 py-20 px-4 sm:px-6 lg:px-8 relative overflow-hidden">

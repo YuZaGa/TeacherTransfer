@@ -2,17 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useSession, signOut } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
 import api from '@/lib/api';
 import {
     Users,
-    ArrowRightLeft,
     Bell,
     CreditCard,
     Search,
     Map as MapIcon,
-    User,
-    LogOut,
     Loader2,
     CheckCircle2,
     Clock,
@@ -123,34 +120,6 @@ export default function DashboardPage() {
 
     return (
         <div className="min-h-screen bg-gray-50 pb-12">
-            <nav className="bg-white shadow-sm border-b sticky top-0 z-10">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between h-16 items-center">
-                        <div className="flex items-center gap-2">
-                            <div className="bg-blue-600 p-2 rounded-lg">
-                                <ArrowRightLeft className="text-white w-6 h-6" />
-                            </div>
-                            <span className="text-xl font-bold text-gray-900 tracking-tight">TeacherTransfer</span>
-                        </div>
-                        <div className="flex items-center gap-4">
-                            <Link href="/profile" className="p-2 text-gray-500 hover:text-blue-600 transition-colors">
-                                {userImage ? (
-                                    <img src={userImage} alt="" className="w-8 h-8 rounded-full" />
-                                ) : (
-                                    <User className="w-6 h-6" />
-                                )}
-                            </Link>
-                            <button
-                                onClick={() => signOut({ callbackUrl: '/login' })}
-                                className="p-2 text-gray-500 hover:text-red-600 transition-colors"
-                            >
-                                <LogOut className="w-6 h-6" />
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </nav>
-
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
                 <div className="mb-8">
                     <h1 className="text-3xl font-bold text-gray-900">Welcome back, {displayName.split(' ')[0]}!</h1>
