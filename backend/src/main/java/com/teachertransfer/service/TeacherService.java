@@ -154,7 +154,7 @@ public class TeacherService {
         teacherRepository.save(teacher);
     }
 
-    private void updateGeoIndex(Teacher teacher) {
+    public void updateGeoIndex(Teacher teacher) {
         if (teacher.getCurrentLat() == null || teacher.getCurrentLng() == null ||
             teacher.getPreferredLat() == null || teacher.getPreferredLng() == null ||
             teacher.getSubject() == null || teacher.getSchoolType() == null) {

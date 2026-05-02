@@ -20,9 +20,13 @@ services:
       - RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID}
       - RAZORPAY_KEY_SECRET=${RAZORPAY_KEY_SECRET}
       - RAZORPAY_WEBHOOK_SECRET=${RAZORPAY_WEBHOOK_SECRET}
-      - SENDGRID_API_KEY=${SENDGRID_API_KEY}
-      - SENDGRID_FROM_EMAIL=${SENDGRID_FROM_EMAIL:-noreply@teachertransfer.in}
-      - SENDGRID_FROM_NAME=${SENDGRID_FROM_NAME:-TeacherTransfer}
+      - EMAIL_PROVIDER=${EMAIL_PROVIDER:-smtp}
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USERNAME=${SMTP_USERNAME}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - EMAIL_FROM=${EMAIL_FROM:-noreply@teachertransfer.in}
+      - EMAIL_FROM_NAME=${EMAIL_FROM_NAME:-TeacherTransfer}
       - APP_NAME=${APP_NAME:-TeacherTransfer}
       - APP_DOMAIN=${APP_DOMAIN:-teachertransfer.in}
     depends_on:

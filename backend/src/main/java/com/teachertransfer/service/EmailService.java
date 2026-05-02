@@ -1,53 +1,60 @@
 package com.teachertransfer.service;
 
+import com.teachertransfer.email.EmailMessage;
+import com.teachertransfer.email.EmailSender;
+import com.teachertransfer.email.EmailType;
 import com.teachertransfer.entity.Teacher;
-import org.springframework.beans.factory.annotation.Value;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-
-import com.sendgrid.*;
-import com.sendgrid.helpers.mail.Mail;
-import com.sendgrid.helpers.mail.objects.Content;
-import com.sendgrid.helpers.mail.objects.Email;
-
-import java.io.IOException;
 
 @Service
 public class EmailService {
 
-    @Value("${sendgrid.api-key:}")
-    private String sendGridApiKey;
+    private static final Logger log = LoggerFactory.getLogger(EmailService.class);
 
-    @Value("${sendgrid.from-email:noreply@teachertransfer.in}")
-    private String fromEmail;
+    private final EmailSender emailSender;
 
-    @Value("${sendgrid.from-name:TeacherTransfer}")
-    private String fromName;
+    public EmailService(EmailSender emailSender) {
+        this.emailSender = emailSender;
+    }
 
     public void sendWelcomeEmail(Teacher teacher) {
-        if (sendGridApiKey == null || sendGridApiKey.isEmpty()) {
-            System.out.println("SendGrid API key not configured. Skipping welcome email for: " + teacher.getEmail());
-            return;
-        }
-
         String subject = "Welcome to TeacherTransfer, " + teacher.getName() + "!";
-        String htmlContent = buildWelcomeHtml(teacher);
+        String htmlBody = buildWelcomeHtml(teacher);
+
+        EmailMessage message = new EmailMessage(
+            teacher.getEmail(),
+            subject,
+            htmlBody,
+            EmailType.WELCOME
+        );
 
         try {
-            Email from = new Email(fromEmail, fromName);
-            Email to = new Email(teacher.getEmail());
-            Content content = new Content("text/html", htmlContent);
-            Mail mail = new Mail(from, subject, to, content);
+            emailSender.send(message);
+            log.info("Welcome email sent to {}", teacher.getEmail());
+        } catch (Exception e) {
+            log.error("Failed to send welcome email to {}: {}", teacher.getEmail(), e.getMessage());
+        }
+    }
 
-            SendGrid sg = new SendGrid(sendGridApiKey);
-            Request request = new Request();
-            request.setMethod(Method.POST);
-            request.setEndpoint("mail/send");
-            request.setBody(mail.build());
+    public void sendOtpEmail(String email, String otp, EmailType type) {
+        String subject = switch (type) {
+            case EMAIL_VERIFICATION_OTP -> "Verify your email for TeacherTransfer";
+            case PASSWORD_RESET_OTP -> "Reset your TeacherTransfer password";
+            default -> "Your TeacherTransfer OTP";
+        };
 
-            Response response = sg.api(request);
-            System.out.println("Welcome email sent to " + teacher.getEmail() + " (status: " + response.getStatusCode() + ")");
-        } catch (IOException e) {
-            System.err.println("Failed to send welcome email to " + teacher.getEmail() + ": " + e.getMessage());
+        String htmlBody = buildOtpHtml(otp, type);
+
+        EmailMessage message = new EmailMessage(email, subject, htmlBody, type);
+
+        try {
+            emailSender.send(message);
+            log.info("OTP email sent to {} type={}", email, type);
+        } catch (Exception e) {
+            log.error("Failed to send OTP email to {} type={}: {}", email, type, e.getMessage());
+            throw e;
         }
     }
 
@@ -70,6 +77,35 @@ public class EmailService {
             + "<li>Respond to interests received from others</li>"
             + "</ul></div>"
             + "<p style='font-size: 14px; color: #9ca3af;'>If you have any questions, feel free to reach out to our support team.</p>"
+            + "<p style='font-size: 14px; color: #9ca3af;'>The TeacherTransfer Team</p>"
+            + "</div></body></html>";
+    }
+
+    private String buildOtpHtml(String otp, EmailType type) {
+        String heading = switch (type) {
+            case EMAIL_VERIFICATION_OTP -> "Verify Your Email";
+            case PASSWORD_RESET_OTP -> "Reset Your Password";
+            default -> "Your OTP";
+        };
+
+        String message = switch (type) {
+            case EMAIL_VERIFICATION_OTP -> "Thanks for signing up! Use the OTP below to verify your email address.";
+            case PASSWORD_RESET_OTP -> "We received a request to reset your password. Use the OTP below to proceed.";
+            default -> "Use the OTP below to complete your request.";
+        };
+
+        return "<!DOCTYPE html>"
+            + "<html><head><meta charset='utf-8'></head>"
+            + "<body style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;'>"
+            + "<div style='background: linear-gradient(135deg, #2563eb, #4f46e5); padding: 30px; border-radius: 12px; text-align: center;'>"
+            + "<h1 style='color: white; margin: 0;'>" + heading + "</h1>"
+            + "</div>"
+            + "<div style='padding: 30px 20px; text-align: center;'>"
+            + "<p style='font-size: 16px; color: #4b5563; line-height: 1.6;'>" + message + "</p>"
+            + "<div style='background: #f3f4f6; border-radius: 8px; padding: 20px; margin: 20px 0; display: inline-block;'>"
+            + "<span style='font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #2563eb;'>" + otp + "</span>"
+            + "</div>"
+            + "<p style='font-size: 14px; color: #9ca3af;'>This OTP expires in 5 minutes. If you did not request this, please ignore this email.</p>"
             + "<p style='font-size: 14px; color: #9ca3af;'>The TeacherTransfer Team</p>"
             + "</div></body></html>";
     }

@@ -36,17 +36,17 @@ public class Teacher {
     private Long id;
 
     // Personal Info
-    @Column(name = "name", nullable = false)
+    @Column(name = "name")
     private String name;
 
-    @Column(name = "phone", nullable = false, unique = true, length = 15)
+    @Column(name = "phone", unique = true, length = 15)
     private String phone;
 
     @Builder.Default
     @Column(name = "phone_verified")
     private Boolean phoneVerified = false;
 
-    @Column(name = "email", length = 255)
+    @Column(name = "email", unique = true, length = 255, nullable = false)
     private String email;
 
     @Builder.Default
@@ -75,23 +75,23 @@ public class Teacher {
     @Column(name = "school_name")
     private String schoolName;
 
-    @Column(name = "subject", nullable = false)
+    @Column(name = "subject")
     private Integer subject;
 
-    @Column(name = "school_type", nullable = false)
+    @Column(name = "school_type")
     private Integer schoolType;
 
     // Current Posting Location
-    @Column(name = "current_district_id", nullable = false)
+    @Column(name = "current_district_id")
     private Integer currentDistrictId;
 
-    @Column(name = "current_block_id", nullable = false)
+    @Column(name = "current_block_id")
     private Integer currentBlockId;
 
-    @Column(name = "current_lat", nullable = false)
+    @Column(name = "current_lat")
     private Double currentLat;
 
-    @Column(name = "current_lng", nullable = false)
+    @Column(name = "current_lng")
     private Double currentLng;
 
     // Preferred Transfer Location
@@ -101,10 +101,10 @@ public class Teacher {
     @Column(name = "preferred_block_id")
     private Integer preferredBlockId;
 
-    @Column(name = "preferred_lat", nullable = false)
+    @Column(name = "preferred_lat")
     private Double preferredLat;
 
-    @Column(name = "preferred_lng", nullable = false)
+    @Column(name = "preferred_lng")
     private Double preferredLng;
 
     @Column(name = "preferred_school_ids")
@@ -122,6 +122,10 @@ public class Teacher {
     @Builder.Default
     @Column(name = "last_interaction_at")
     private LocalDateTime lastInteractionAt = LocalDateTime.now();
+
+    @Builder.Default
+    @Column(name = "onboarding_completed")
+    private Boolean onboardingCompleted = false;
 
     @Builder.Default
     @Column(name = "profile_updated_at")

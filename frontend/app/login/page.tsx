@@ -1,18 +1,26 @@
 'use client';
 
-import { signIn } from 'next-auth/react';
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { ShieldCheck, ArrowRight, Eye, EyeOff, ArrowRightLeft } from 'lucide-react';
+import { signIn, getSession } from 'next-auth/react';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { ShieldCheck, ArrowRight, Eye, EyeOff, ArrowRightLeft, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
 
 export default function LoginPage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [loading, setLoading] = useState(false);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
+    const [registered, setRegistered] = useState(false);
+
+    useEffect(() => {
+        if (searchParams.get('registered') === 'true') {
+            setRegistered(true);
+        }
+    }, [searchParams]);
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -33,8 +41,10 @@ export default function LoginPage() {
             return;
         }
 
-        // Successful login — redirect to dashboard
-        router.push('/dashboard');
+        // Successful login — redirect based on session
+        const session = await getSession();
+        const redirectTo = (session?.user as any)?.redirectTo || '/dashboard';
+        router.push(redirectTo);
         router.refresh();
     };
 
@@ -79,6 +89,13 @@ export default function LoginPage() {
                         <p className="text-center text-gray-500 text-sm mb-8">
                             Sign in to discover mutual transfer opportunities.
                         </p>
+
+                        {registered && (
+                            <div className="bg-green-50 border border-green-200 text-green-700 p-3 rounded-xl text-sm mb-4 flex items-center justify-center gap-2">
+                                <CheckCircle2 className="w-5 h-5" />
+                                Account created successfully! Please sign in.
+                            </div>
+                        )}
 
                         {error && (
                             <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-xl text-sm mb-4 text-center">
@@ -139,8 +156,11 @@ export default function LoginPage() {
                         </form>
 
                         <div className="mt-8 pt-6 border-t border-gray-100 text-center">
-                            <p className="text-xs text-gray-400">
-                                Don't have an account? Registration coming soon.
+                            <p className="text-sm text-gray-500">
+                                Don't have an account?{' '}
+                                <Link href="/auth/signup" className="text-blue-600 hover:text-blue-700 font-bold">
+                                    Sign up
+                                </Link>
                             </p>
                         </div>
                     </div>

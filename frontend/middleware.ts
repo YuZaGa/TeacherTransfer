@@ -6,7 +6,7 @@ export async function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
     // Public routes that don't require auth
-    const publicRoutes = ['/', '/login', '/auth/otp'];
+    const publicRoutes = ['/', '/login', '/auth/otp', '/auth/signup'];
     if (publicRoutes.includes(pathname)) {
         return NextResponse.next();
     }
@@ -20,17 +20,6 @@ export async function middleware(request: NextRequest) {
     // All other routes require authentication
     if (!token) {
         return NextResponse.redirect(new URL('/login', request.url));
-    }
-
-    // Logged in but not onboarded — force to onboarding
-    const isOnboarded = (token as any)?.isOnboarded ?? false;
-    if (!isOnboarded && pathname !== '/onboarding') {
-        return NextResponse.redirect(new URL('/onboarding', request.url));
-    }
-
-    // Logged in and onboarded — prevent going back to onboarding/login
-    if (isOnboarded && (pathname === '/onboarding' || pathname === '/login' || pathname === '/auth/otp')) {
-        return NextResponse.redirect(new URL('/dashboard', request.url));
     }
 
     return NextResponse.next();

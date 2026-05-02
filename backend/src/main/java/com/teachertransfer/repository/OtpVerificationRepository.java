@@ -16,12 +16,22 @@ public interface OtpVerificationRepository extends JpaRepository<OtpVerification
 
     Optional<OtpVerification> findTopByPhoneAndPurposeOrderByCreatedAtDesc(String phone, Integer purpose);
 
+    Optional<OtpVerification> findTopByEmailAndPurposeOrderByCreatedAtDesc(String email, Integer purpose);
+
     @Query("SELECT o FROM OtpVerification o WHERE o.phone = :phone AND o.purpose = :purpose " +
            "AND o.expiresAt > :now AND o.attempts < 3 AND o.verified = false " +
            "ORDER BY o.createdAt DESC")
     List<OtpVerification> findValidOtp(@Param("phone") String phone,
                                        @Param("purpose") Integer purpose,
                                        @Param("now") LocalDateTime now);
+
+    @Query("SELECT o FROM OtpVerification o WHERE o.email = :email AND o.purpose = :purpose " +
+           "AND o.expiresAt > :now AND o.attempts < :maxAttempts AND o.verified = false " +
+           "ORDER BY o.createdAt DESC")
+    List<OtpVerification> findValidEmailOtps(@Param("email") String email,
+                                             @Param("purpose") Integer purpose,
+                                             @Param("now") LocalDateTime now,
+                                             @Param("maxAttempts") Integer maxAttempts);
 
     @Query("SELECT o FROM OtpVerification o WHERE o.expiresAt < :now")
     List<OtpVerification> findExpiredOtps(@Param("now") LocalDateTime now);

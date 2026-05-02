@@ -45,8 +45,9 @@ export const authOptions: NextAuthOptions = {
                         name: data.name,
                         email: data.email,
                         image: data.profilePictureUrl || null,
-                        isOnboarded: true,
+                        isOnboarded: !data.onboardingRequired,
                         backendToken: data.token,
+                        redirectTo: data.redirectTo || '/dashboard',
                     };
                 } catch (error) {
                     console.error('[Auth] authorize error:', error);
@@ -67,6 +68,7 @@ export const authOptions: NextAuthOptions = {
                 token.id = user.id;
                 token.isOnboarded = (user as any).isOnboarded ?? false;
                 token.backendToken = (user as any).backendToken ?? null;
+                token.redirectTo = (user as any).redirectTo || '/dashboard';
             }
             return token;
         },
@@ -75,6 +77,7 @@ export const authOptions: NextAuthOptions = {
                 (session.user as any).id = token.id;
                 (session.user as any).isOnboarded = token.isOnboarded;
                 (session.user as any).backendToken = token.backendToken;
+                (session.user as any).redirectTo = token.redirectTo;
             }
             return session;
         },

@@ -9,7 +9,8 @@ import lombok.Getter;
 public enum OtpPurpose {
     REGISTRATION(1, "Registration"),
     LOGIN(2, "Login"),
-    PASSWORD_RESET(3, "Password Reset");
+    PASSWORD_RESET(3, "Password Reset"),
+    EMAIL_VERIFICATION(4, "Email Verification");
 
     private final int code;
     private final String displayName;

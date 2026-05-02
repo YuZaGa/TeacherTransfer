@@ -14,70 +14,42 @@ export async function POST(req: Request) {
     try {
         const body = await req.json();
 
-        const {
-            phone,
-            gender,
-            employeeId,
-            udiseCode,
-            schoolName,
-            subject,
-            schoolType,
-            currentDistrictId,
-            currentBlockId,
-            currentLat,
-            currentLng,
-            preferredDistrictId,
-            preferredBlockId,
-            preferredLat,
-            preferredLng,
-            radiusKm,
-        } = body;
+        const payload = {
+            name: body.name,
+            phone: body.phone,
+            gender: body.gender,
+            employeeId: body.employeeId || null,
+            udiseCode: body.udiseCode || null,
+            schoolName: body.schoolName,
+            subject: body.subject,
+            schoolType: body.schoolType,
+            currentDistrictId: body.currentDistrictId ? parseInt(body.currentDistrictId) : null,
+            currentBlockId: body.currentBlockId ? parseInt(body.currentBlockId) : null,
+            currentLat: body.currentLat ? parseFloat(body.currentLat) : null,
+            currentLng: body.currentLng ? parseFloat(body.currentLng) : null,
+            preferredDistrictId: body.preferredDistrictId ? parseInt(body.preferredDistrictId) : null,
+            preferredBlockId: body.preferredBlockId ? parseInt(body.preferredBlockId) : null,
+            preferredLat: body.preferredLat ? parseFloat(body.preferredLat) : null,
+            preferredLng: body.preferredLng ? parseFloat(body.preferredLng) : null,
+            radiusKm: body.radiusKm ? parseInt(body.radiusKm) : 30,
+        };
 
-        // Validate phone: 10-digit Indian mobile
-        if (!phone || !/^[6-9]\d{9}$/.test(phone)) {
-            return NextResponse.json(
-                { error: 'Please enter a valid 10-digit Indian mobile number' },
-                { status: 400 }
-            );
-        }
-
-        // Forward to backend API to update teacher profile
         const backendToken = (session.user as any).backendToken;
-        const res = await fetch(`${API_URL}/teacher/me`, {
-            method: 'PUT',
+        const res = await fetch(`${API_URL}/auth/onboarding/complete`, {
+            method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${backendToken}`,
             },
-            body: JSON.stringify({
-                phone,
-                gender,
-                employeeId: employeeId || null,
-                udiseCode: udiseCode || null,
-                schoolName,
-                subject,
-                schoolType,
-                currentLocation: {
-                    districtId: currentDistrictId ? parseInt(currentDistrictId) : null,
-                    blockId: currentBlockId ? parseInt(currentBlockId) : null,
-                    lat: currentLat ? parseFloat(currentLat) : null,
-                    lng: currentLng ? parseFloat(currentLng) : null,
-                },
-                preferredLocation: {
-                    districtId: preferredDistrictId ? parseInt(preferredDistrictId) : null,
-                    blockId: preferredBlockId ? parseInt(preferredBlockId) : null,
-                    lat: preferredLat ? parseFloat(preferredLat) : null,
-                    lng: preferredLng ? parseFloat(preferredLng) : null,
-                },
-                radiusKm: radiusKm ? parseInt(radiusKm) : 30,
-            }),
+            body: JSON.stringify(payload),
         });
 
-        if (!res.ok) {
-            const errorText = await res.text();
-            console.error('Backend onboarding error:', res.status, errorText);
+        const data = await res.json();
+
+        if (!res.ok || !data.success) {
+            console.error('Backend onboarding error:', res.status, data);
             return NextResponse.json(
-                { error: 'Failed to save onboarding data' },
+                { error: data.message || 'Failed to save onboarding data' },
                 { status: res.status }
             );
         }

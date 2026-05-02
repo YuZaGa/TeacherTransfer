@@ -16,7 +16,8 @@ import java.time.LocalDateTime;
  */
 @Entity
 @Table(name = "otp_verification", indexes = {
-    @Index(name = "idx_otp_phone", columnList = "phone, purpose")
+    @Index(name = "idx_otp_phone", columnList = "phone, purpose"),
+    @Index(name = "idx_otp_email", columnList = "email, purpose")
 })
 @EntityListeners(AuditingEntityListener.class)
 @Data
@@ -29,8 +30,11 @@ public class OtpVerification {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "phone", nullable = false, length = 15)
+    @Column(name = "phone", length = 15)
     private String phone;
+
+    @Column(name = "email", length = 255)
+    private String email;
 
     @Column(name = "otp_hash", nullable = false)
     private String otpHash;

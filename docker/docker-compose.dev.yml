@@ -11,6 +11,13 @@ services:
     command: ["mvn", "spring-boot:run", "-Dspring-boot.run.jvmArguments=-Dspring.devtools.restart.enabled=true"]
     environment:
       - SPRING_DEVTOOLS_RESTART_ENABLED=true
+      - EMAIL_PROVIDER=smtp
+      - SMTP_HOST=mailhog
+      - SMTP_PORT=1025
+      - SMTP_USERNAME=
+      - SMTP_PASSWORD=
+      - SMTP_AUTH=false
+      - SMTP_STARTTLS=false
     healthcheck:
       disable: true
 
@@ -27,5 +34,18 @@ services:
     healthcheck:
       disable: true
 
+  mailhog:
+    image: mailhog/mailhog
+    container_name: teacher-transfer-mailhog
+    ports:
+      - "8025:8025"  # Web UI
+      - "1025:1025"  # SMTP port
+    networks:
+      - app-network
+
 volumes:
   maven_cache:
+
+networks:
+  app-network:
+    driver: bridge

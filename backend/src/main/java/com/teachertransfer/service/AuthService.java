@@ -1,19 +1,25 @@
 package com.teachertransfer.service;
 
-import com.teachertransfer.dto.auth.*;
 import com.teachertransfer.dto.ApiResponse;
+import com.teachertransfer.dto.auth.*;
+import com.teachertransfer.dto.onboarding.OnboardingRequest;
+import com.teachertransfer.dto.onboarding.OnboardingResponse;
+import com.teachertransfer.entity.Block;
 import com.teachertransfer.entity.Teacher;
 import com.teachertransfer.enums.SubscriptionStatus;
 import com.teachertransfer.enums.TeacherStatus;
 import com.teachertransfer.repository.BlockRepository;
 import com.teachertransfer.repository.TeacherRepository;
 import com.teachertransfer.security.JwtUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
 import java.security.SecureRandom;
@@ -23,6 +29,8 @@ import java.util.Optional;
 
 @Service
 public class AuthService {
+
+    private static final Logger log = LoggerFactory.getLogger(AuthService.class);
 
     @Autowired
     private TeacherRepository teacherRepository;
@@ -41,6 +49,12 @@ public class AuthService {
 
     @Autowired
     private EmailService emailService;
+
+    @Autowired
+    private EmailVerificationService emailVerificationService;
+
+    @Autowired
+    private TeacherService teacherService;
 
     // ==================== Google Auth ====================
 
@@ -198,6 +212,110 @@ public class AuthService {
         return ApiResponse.success("Registration successful", response);
     }
 
+    // ==================== Email + Password Signup ====================
+
+    @Transactional
+    public ApiResponse<AuthResponse> signupComplete(SignupCompleteRequest request) {
+        String email = request.getEmail().trim().toLowerCase();
+
+        if (teacherRepository.existsByEmail(email)) {
+            return ApiResponse.error("Email already registered");
+        }
+
+        boolean otpValid = emailVerificationService.validateOtp(email, request.getOtp());
+        if (!otpValid) {
+            return ApiResponse.error("Invalid or expired OTP. Please request a new one.");
+        }
+
+        Teacher teacher = Teacher.builder()
+            .email(email)
+            .passwordHash(passwordEncoder.encode(request.getPassword()))
+            .emailVerified(true)
+            .status(TeacherStatus.ACTIVE.getCode())
+            .subscriptionStatus(SubscriptionStatus.FREE.getCode())
+            .referralCode(generateReferralCode())
+            .onboardingCompleted(false)
+            .build();
+
+        teacher = teacherRepository.save(teacher);
+
+        log.info("New user registered with email: {}", email);
+
+        AuthResponse response = new AuthResponse();
+        response.setEmail(teacher.getEmail());
+        response.setEmailVerified(true);
+        response.setSubscriptionStatus(teacher.getSubscriptionStatus());
+        response.setRedirectTo("/login");
+
+        return ApiResponse.success("Registration successful. Please log in.", response);
+    }
+
+    // ==================== First-Time Onboarding ====================
+
+    public ApiResponse<OnboardingResponse> completeOnboarding(Long teacherId, OnboardingRequest request) {
+        Teacher teacher = teacherRepository.findById(teacherId)
+            .orElseThrow(() -> new RuntimeException("Teacher not found"));
+
+        if (request.getPhone() != null && !request.getPhone().equals(teacher.getPhone())) {
+            if (teacherRepository.existsByPhone(request.getPhone())) {
+                return ApiResponse.error("Phone number already in use");
+            }
+        }
+
+        teacher.setName(request.getName());
+        teacher.setPhone(request.getPhone());
+        teacher.setGender(request.getGender() != null ? request.getGender().getCode() : null);
+        teacher.setEmployeeId(request.getEmployeeId());
+        teacher.setUdiseCode(request.getUdiseCode());
+        teacher.setSchoolName(request.getSchoolName());
+        teacher.setSubject(request.getSubject().getCode());
+        teacher.setSchoolType(request.getSchoolType().getCode());
+        teacher.setCurrentDistrictId(request.getCurrentDistrictId());
+        teacher.setCurrentBlockId(request.getCurrentBlockId());
+
+        Double currentLat = request.getCurrentLat();
+        Double currentLng = request.getCurrentLng();
+        if (currentLat == null || currentLng == null) {
+            Block currentBlock = blockRepository.findById(request.getCurrentBlockId()).orElse(null);
+            if (currentBlock != null) {
+                currentLat = currentBlock.getLat();
+                currentLng = currentBlock.getLng();
+            }
+        }
+        teacher.setCurrentLat(currentLat);
+        teacher.setCurrentLng(currentLng);
+
+        teacher.setPreferredDistrictId(request.getPreferredDistrictId());
+        teacher.setPreferredBlockId(request.getPreferredBlockId());
+
+        Double preferredLat = request.getPreferredLat();
+        Double preferredLng = request.getPreferredLng();
+        if (preferredLat == null || preferredLng == null) {
+            Block preferredBlock = blockRepository.findById(request.getPreferredBlockId()).orElse(null);
+            if (preferredBlock != null) {
+                preferredLat = preferredBlock.getLat();
+                preferredLng = preferredBlock.getLng();
+            }
+        }
+        teacher.setPreferredLat(preferredLat);
+        teacher.setPreferredLng(preferredLng);
+
+        teacher.setRadiusKm(request.getRadiusKm());
+        teacher.setOnboardingCompleted(true);
+        teacher.setProfileUpdatedAt(LocalDateTime.now());
+
+        teacherRepository.save(teacher);
+
+        teacherService.updateGeoIndex(teacher);
+
+        log.info("Onboarding completed for teacher id={} email={}", teacher.getId(), teacher.getEmail());
+
+        OnboardingResponse onboardingResponse = new OnboardingResponse(
+            "Onboarding completed successfully", "/dashboard");
+
+        return ApiResponse.success("Profile setup complete", onboardingResponse);
+    }
+
     // ==================== Email + Password Login ====================
 
     public ApiResponse<AuthResponse> login(LoginRequest request) {
@@ -231,6 +349,12 @@ public class AuthService {
         response.setPhoneVerified(teacher.getPhoneVerified());
         response.setEmailVerified(teacher.getEmailVerified());
         response.setSubscriptionStatus(teacher.getSubscriptionStatus());
+        response.setOnboardingRequired(
+            teacher.getOnboardingCompleted() == null || !teacher.getOnboardingCompleted());
+
+        String redirectTo = (teacher.getOnboardingCompleted() == null || !teacher.getOnboardingCompleted())
+            ? "/onboarding" : "/dashboard";
+        response.setRedirectTo(redirectTo);
 
         return ApiResponse.success("Login successful", response);
     }

@@ -16,6 +16,7 @@ public class AuthResponse {
     private String redirectTo;
     private String googleId;
     private String profilePictureUrl;
+    private Boolean onboardingRequired;
 
     public AuthResponse() {}
 
@@ -61,4 +62,7 @@ public class AuthResponse {
 
     public String getProfilePictureUrl() { return profilePictureUrl; }
     public void setProfilePictureUrl(String profilePictureUrl) { this.profilePictureUrl = profilePictureUrl; }
+
+    public Boolean getOnboardingRequired() { return onboardingRequired; }
+    public void setOnboardingRequired(Boolean onboardingRequired) { this.onboardingRequired = onboardingRequired; }
 }

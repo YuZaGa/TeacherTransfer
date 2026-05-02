@@ -20,16 +20,19 @@ spring:
           time_zone: UTC
   
   mail:
-    host: ${SMTP_HOST:smtp.sendgrid.net}
+    host: ${SMTP_HOST:}
     port: ${SMTP_PORT:587}
-    username: ${SENDGRID_API_KEY}
-    password: ${SENDGRID_API_KEY}
+    username: ${SMTP_USERNAME:}
+    password: ${SMTP_PASSWORD:}
     properties:
       mail:
         smtp:
-          auth: true
+          auth: ${SMTP_AUTH:true}
           starttls:
-            enable: true
+            enable: ${SMTP_STARTTLS:true}
+          connectiontimeout: 5000
+          writetimeout: 5000
+          timeout: 5000
 
 server:
   port: ${SERVER_PORT:8080}
@@ -53,6 +56,15 @@ app:
     expiry-seconds: ${OTP_EXPIRY_SECONDS:300}
     max-attempts: ${OTP_MAX_ATTEMPTS:3}
   
+  # Email Configuration
+  email:
+    provider: ${EMAIL_PROVIDER:smtp}
+    from-address: ${EMAIL_FROM:noreply@teachertransfer.in}
+    from-name: ${EMAIL_FROM_NAME:TeacherTransfer}
+    retry:
+      max-attempts: ${EMAIL_RETRY_MAX_ATTEMPTS:3}
+      backoff-delay: ${EMAIL_RETRY_BACKOFF_DELAY:1000}
+
   # MSG91 Configuration
   msg91:
     auth-key: ${MSG91_AUTH_KEY:}

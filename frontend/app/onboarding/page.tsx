@@ -77,6 +77,7 @@ export default function OnboardingPage() {
     const [phoneError, setPhoneError] = useState('');
 
     const [formData, setFormData] = useState({
+        name: '',
         phone: '',
         gender: 'MALE',
         employeeId: '',
@@ -178,11 +179,9 @@ export default function OnboardingPage() {
         e.preventDefault();
         setError('');
 
+        if (!formData.name.trim()) { setError('Name is required'); return; }
         if (!validatePhone(formData.phone)) return;
-        if (!formData.schoolName.trim()) {
-            setError('School name is required');
-            return;
-        }
+        if (!formData.schoolName.trim()) { setError('School name is required'); return; }
 
         setLoading(true);
 
@@ -238,6 +237,21 @@ export default function OnboardingPage() {
                             Personal Info
                         </h2>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <div className="md:col-span-2">
+                                <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                                    <span className="flex items-center gap-1">
+                                        <User className="w-3.5 h-3.5" /> Full Name *
+                                    </span>
+                                </label>
+                                <input
+                                    type="text"
+                                    required
+                                    placeholder="Your full name"
+                                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                    value={formData.name}
+                                    onChange={e => setFormData({ ...formData, name: e.target.value })}
+                                />
+                            </div>
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">
                                     <span className="flex items-center gap-1">
