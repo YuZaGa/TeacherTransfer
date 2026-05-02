@@ -125,80 +125,92 @@ export default function ProfilePage() {
 
     const handleCurrentDistrictChange = async (districtId: number) => {
         try {
-            const res = await api.get(`/geography/districts/${districtId}/blocks`);
-            setCurrentBlocks(res.data.data);
-            const dist = districts.find(d => d.id === districtId);
-            setTeacher({
-                ...teacher,
+            setCurrentBlocks([]);
+            const [blocksRes, dist] = await Promise.all([
+                api.get(`/geography/districts/${districtId}/blocks`),
+                districts.find(d => d.id === districtId),
+            ]);
+            setCurrentBlocks(blocksRes.data.data);
+            setTeacher((prev: any) => ({
+                ...prev,
                 currentLocation: {
                     districtId,
                     blockId: null,
                     lat: dist?.lat || null,
                     lng: dist?.lng || null,
                 },
-            });
+            }));
         } catch (err) {
             setError('Failed to load blocks.');
         }
     };
 
     const handleCurrentBlockChange = (blockId: number) => {
-        const block = currentBlocks.find(b => b.id === blockId);
-        setTeacher({
-            ...teacher,
-            currentLocation: {
-                ...(teacher.currentLocation || {}),
-                blockId,
-                lat: block?.lat || teacher.currentLocation?.lat,
-                lng: block?.lng || teacher.currentLocation?.lng,
-            },
+        setTeacher((prev: any) => {
+            const block = currentBlocks.find(b => b.id === blockId);
+            const currLoc = prev.currentLocation || {};
+            return {
+                ...prev,
+                currentLocation: {
+                    ...currLoc,
+                    blockId,
+                    lat: block?.lat ?? currLoc.lat,
+                    lng: block?.lng ?? currLoc.lng,
+                },
+            };
         });
     };
 
     const handlePreferredDistrictChange = async (districtId: number) => {
         try {
-            const res = await api.get(`/geography/districts/${districtId}/blocks`);
-            setPreferredBlocks(res.data.data);
-            const dist = districts.find(d => d.id === districtId);
-            setTeacher({
-                ...teacher,
+            setPreferredBlocks([]);
+            const [blocksRes, dist] = await Promise.all([
+                api.get(`/geography/districts/${districtId}/blocks`),
+                districts.find(d => d.id === districtId),
+            ]);
+            setPreferredBlocks(blocksRes.data.data);
+            setTeacher((prev: any) => ({
+                ...prev,
                 preferredLocation: {
                     districtId,
                     blockId: null,
                     lat: dist?.lat || null,
                     lng: dist?.lng || null,
                 },
-            });
+            }));
         } catch (err) {
             setError('Failed to load blocks.');
         }
     };
 
     const handlePreferredBlockChange = (blockId: number) => {
-        const block = preferredBlocks.find(b => b.id === blockId);
-        setTeacher({
-            ...teacher,
-            preferredLocation: {
-                ...(teacher.preferredLocation || {}),
-                blockId,
-                lat: block?.lat || teacher.preferredLocation?.lat,
-                lng: block?.lng || teacher.preferredLocation?.lng,
-            },
+        setTeacher((prev: any) => {
+            const block = preferredBlocks.find(b => b.id === blockId);
+            const prefLoc = prev.preferredLocation || {};
+            return {
+                ...prev,
+                preferredLocation: {
+                    ...prefLoc,
+                    blockId,
+                    lat: block?.lat ?? prefLoc.lat,
+                    lng: block?.lng ?? prefLoc.lng,
+                },
+            };
         });
     };
 
     const handleCurrentLocationMapChange = (lat: number, lng: number) => {
-        setTeacher({
-            ...teacher,
-            currentLocation: { ...(teacher.currentLocation || {}), lat, lng },
-        });
+        setTeacher((prev: any) => ({
+            ...prev,
+            currentLocation: { ...(prev.currentLocation || {}), lat, lng },
+        }));
     };
 
     const handlePreferredLocationMapChange = (lat: number, lng: number) => {
-        setTeacher({
-            ...teacher,
-            preferredLocation: { ...(teacher.preferredLocation || {}), lat, lng },
-        });
+        setTeacher((prev: any) => ({
+            ...prev,
+            preferredLocation: { ...(prev.preferredLocation || {}), lat, lng },
+        }));
     };
 
     const hasMatchAffectingChanges = (): boolean => {
@@ -391,7 +403,7 @@ export default function ProfilePage() {
                                     <select
                                         className="w-full px-4 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
                                         value={teacher.subject || ''}
-                                        onChange={e => setTeacher({ ...teacher, subject: e.target.value || null })}
+                                        onChange={e => setTeacher((prev: any) => ({ ...prev, subject: e.target.value || null }))}
                                     >
                                         <option value="">Select Subject</option>
                                         {SUBJECTS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
@@ -402,7 +414,7 @@ export default function ProfilePage() {
                                     <select
                                         className="w-full px-4 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
                                         value={teacher.schoolType || ''}
-                                        onChange={e => setTeacher({ ...teacher, schoolType: e.target.value || null })}
+                                        onChange={e => setTeacher((prev: any) => ({ ...prev, schoolType: e.target.value || null }))}
                                     >
                                         <option value="">Select School Level</option>
                                         {SCHOOL_TYPES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
@@ -452,7 +464,7 @@ export default function ProfilePage() {
                                         step="5"
                                         className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
                                         value={teacher.radiusKm}
-                                        onChange={e => setTeacher({ ...teacher, radiusKm: parseInt(e.target.value) })}
+                                        onChange={e => setTeacher((prev: any) => ({ ...prev, radiusKm: parseInt(e.target.value) }))}
                                     />
                                     <span className="w-12 text-center font-bold text-blue-600 bg-blue-50 py-1 rounded">
                                         {teacher.radiusKm}

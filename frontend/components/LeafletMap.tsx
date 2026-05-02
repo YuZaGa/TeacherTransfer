@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 
 interface LeafletMapProps {
     selectedDistrictId: number | null;
@@ -29,6 +29,9 @@ export default function LeafletMap({
     const markerRef = useRef<any>(null);
     const initializedRef = useRef(false);
     const prevCenterKeyRef = useRef('');
+    const onLocationChangeRef = useRef(onLocationChange);
+
+    onLocationChangeRef.current = onLocationChange;
 
     const markerPos: [number, number] | null =
         lat != null && lng != null ? [lat, lng] : null;
@@ -80,7 +83,7 @@ export default function LeafletMap({
             const marker = L.marker(mapCenter, { draggable: true, icon }).addTo(map);
             marker.on('dragend', () => {
                 const pos = marker.getLatLng();
-                onLocationChange(pos.lat, pos.lng);
+                onLocationChangeRef.current(pos.lat, pos.lng);
             });
 
             mapRef.current = map;

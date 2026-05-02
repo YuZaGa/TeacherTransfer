@@ -113,7 +113,7 @@ export default function OnboardingPage() {
     }, []);
 
     const handleCurrentDistrictChange = async (districtId: number) => {
-        setFormData({ ...formData, currentDistrictId: districtId, currentBlockId: null, currentLat: null, currentLng: null });
+        setFormData(prev => ({ ...prev, currentDistrictId: districtId, currentBlockId: null, currentLat: null, currentLng: null }));
         setCurrentBlocks([]);
         try {
             const res = await api.get(`/geography/districts/${districtId}/blocks`);
@@ -124,7 +124,7 @@ export default function OnboardingPage() {
     };
 
     const handlePreferredDistrictChange = async (districtId: number) => {
-        setFormData({ ...formData, preferredDistrictId: districtId, preferredBlockId: null, preferredLat: null, preferredLng: null });
+        setFormData(prev => ({ ...prev, preferredDistrictId: districtId, preferredBlockId: null, preferredLat: null, preferredLng: null }));
         setPreferredBlocks([]);
         try {
             const res = await api.get(`/geography/districts/${districtId}/blocks`);
@@ -135,31 +135,35 @@ export default function OnboardingPage() {
     };
 
     const handleCurrentBlockChange = (blockId: number) => {
-        const block = currentBlocks.find(b => b.id === blockId);
-        setFormData({
-            ...formData,
-            currentBlockId: blockId,
-            currentLat: block?.lat || null,
-            currentLng: block?.lng || null,
+        setFormData(prev => {
+            const block = currentBlocks.find(b => b.id === blockId);
+            return {
+                ...prev,
+                currentBlockId: blockId,
+                currentLat: block?.lat ?? prev.currentLat,
+                currentLng: block?.lng ?? prev.currentLng,
+            };
         });
     };
 
     const handlePreferredBlockChange = (blockId: number) => {
-        const block = preferredBlocks.find(b => b.id === blockId);
-        setFormData({
-            ...formData,
-            preferredBlockId: blockId,
-            preferredLat: block?.lat || null,
-            preferredLng: block?.lng || null,
+        setFormData(prev => {
+            const block = preferredBlocks.find(b => b.id === blockId);
+            return {
+                ...prev,
+                preferredBlockId: blockId,
+                preferredLat: block?.lat ?? prev.preferredLat,
+                preferredLng: block?.lng ?? prev.preferredLng,
+            };
         });
     };
 
     const handleCurrentLocationMapChange = (lat: number, lng: number) => {
-        setFormData({ ...formData, currentLat: lat, currentLng: lng });
+        setFormData(prev => ({ ...prev, currentLat: lat, currentLng: lng }));
     };
 
     const handlePreferredLocationMapChange = (lat: number, lng: number) => {
-        setFormData({ ...formData, preferredLat: lat, preferredLng: lng });
+        setFormData(prev => ({ ...prev, preferredLat: lat, preferredLng: lng }));
     };
 
     const validatePhone = (phone: string) => {
