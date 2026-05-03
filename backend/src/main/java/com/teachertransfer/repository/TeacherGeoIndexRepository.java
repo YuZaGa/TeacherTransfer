@@ -14,7 +14,7 @@ public interface TeacherGeoIndexRepository extends JpaRepository<TeacherGeoIndex
 
     List<TeacherGeoIndex> findByTeacherId(Long teacherId);
 
-    @Query("SELECT t FROM TeacherGeoIndex t WHERE t.geohash IN :geohashes " +
+    @Query("SELECT DISTINCT t FROM TeacherGeoIndex t WHERE (t.geohash IN :geohashes OR t.currentGeohash IN :geohashes) " +
            "AND t.subject = :subject AND t.schoolType = :schoolType " +
            "AND t.teacherId != :excludeTeacherId")
     List<TeacherGeoIndex> findCandidatesByGeohashes(@Param("geohashes") Set<String> geohashes,

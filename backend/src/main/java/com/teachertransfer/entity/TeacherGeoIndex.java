@@ -13,6 +13,7 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "teacher_geo_index", indexes = {
     @Index(name = "idx_geo_match", columnList = "geohash, subject, school_type"),
+    @Index(name = "idx_current_geo_match", columnList = "current_geohash, subject, school_type"),
     @Index(name = "idx_geo_teacher", columnList = "teacher_id", unique = true),
     @Index(name = "idx_geo_premium", columnList = "is_premium, geohash")
 })
@@ -30,8 +31,11 @@ public class TeacherGeoIndex {
     @Column(name = "teacher_id", nullable = false, unique = true)
     private Long teacherId;
 
-    @Column(name = "geohash", nullable = false, length = 6)
+    @Column(name = "geohash", nullable = false, length = 12)
     private String geohash;
+
+    @Column(name = "current_geohash", length = 12)
+    private String currentGeohash;
 
     @Column(name = "subject", nullable = false)
     private Integer subject;

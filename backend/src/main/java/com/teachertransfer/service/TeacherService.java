@@ -172,6 +172,8 @@ public class TeacherService {
 
         String geohash = GeohashUtil.encode(teacher.getPreferredLat(), teacher.getPreferredLng());
         geoIndex.setGeohash(geohash);
+        String currentGeohash = GeohashUtil.encode(teacher.getCurrentLat(), teacher.getCurrentLng());
+        geoIndex.setCurrentGeohash(currentGeohash);
         geoIndex.setSubject(teacher.getSubject());
         geoIndex.setSchoolType(teacher.getSchoolType());
         geoIndex.setCurrentLat(teacher.getCurrentLat());
