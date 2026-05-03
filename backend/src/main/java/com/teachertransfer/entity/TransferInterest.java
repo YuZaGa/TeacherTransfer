@@ -54,10 +54,6 @@ public class TransferInterest {
     @Column(name = "responded_at")
     private LocalDateTime respondedAt;
 
-    @Builder.Default
-    @Column(name = "is_outdated")
-    private Boolean isOutdated = false;
-
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

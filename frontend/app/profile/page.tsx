@@ -217,24 +217,16 @@ export default function ProfilePage() {
         if (!originalTeacher) return false;
         const o = originalTeacher;
         const t = teacher;
-
-        const locChanged = (locA: any, locB: any) => {
+        const blockChanged = (locA: any, locB: any) => {
             if (!locA && !locB) return false;
             if (!locA || !locB) return true;
-            return (
-                locA.districtId !== locB.districtId ||
-                locA.blockId !== locB.blockId ||
-                locA.lat !== locB.lat ||
-                locA.lng !== locB.lng
-            );
+            return locA.districtId !== locB.districtId || locA.blockId !== locB.blockId;
         };
-
         return (
-            locChanged(o.currentLocation, t.currentLocation) ||
-            locChanged(o.preferredLocation, t.preferredLocation) ||
-            o.radiusKm !== t.radiusKm ||
             JSON.stringify(o.subject) !== JSON.stringify(t.subject) ||
-            JSON.stringify(o.schoolType) !== JSON.stringify(t.schoolType)
+            JSON.stringify(o.schoolType) !== JSON.stringify(t.schoolType) ||
+            blockChanged(o.currentLocation, t.currentLocation) ||
+            blockChanged(o.preferredLocation, t.preferredLocation)
         );
     };
 
@@ -509,8 +501,7 @@ export default function ProfilePage() {
                             <h3 className="text-lg font-bold text-gray-900">Confirm Update</h3>
                         </div>
                         <p className="text-gray-600 mb-6">
-                            Changing your location, subject, school type, or search radius will reset your current matches.
-                            You will need to re-discover teachers after the update. Your existing interest requests are preserved.
+                            Changing your subject, school type, district, or block will reset all your interests and matches.
                         </p>
                         <div className="flex gap-3">
                             <button

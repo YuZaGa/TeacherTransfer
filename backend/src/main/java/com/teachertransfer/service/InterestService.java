@@ -6,11 +6,13 @@ import com.teachertransfer.entity.Teacher;
 import com.teachertransfer.entity.TransferInterest;
 import com.teachertransfer.enums.InterestStatus;
 import com.teachertransfer.enums.InterestType;
+import com.teachertransfer.repository.MatchResultRepository;
 import com.teachertransfer.repository.NotificationRepository;
 import com.teachertransfer.repository.TeacherRepository;
 import com.teachertransfer.repository.TransferInterestRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -31,6 +33,9 @@ public class InterestService {
     @Autowired
     private TeacherService teacherService;
 
+    @Autowired
+    private MatchResultRepository matchResultRepository;
+
     public InterestResponse sendInterest(Long fromTeacherId, Long toTeacherId) {
         Teacher fromTeacher = teacherRepository.findById(fromTeacherId)
                 .orElseThrow(() -> new RuntimeException("Teacher not found"));
@@ -38,24 +43,16 @@ public class InterestService {
         Teacher toTeacher = teacherRepository.findById(toTeacherId)
                 .orElseThrow(() -> new RuntimeException("Teacher not found"));
 
-        var existing = interestRepository.findExistingInterest(fromTeacherId, toTeacherId);
-        TransferInterest interest;
-        if (existing.isPresent()) {
-            interest = existing.get();
-            if (!Boolean.TRUE.equals(interest.getIsOutdated())) {
-                throw new RuntimeException("Interest already sent");
-            }
-            interest.setIsOutdated(false);
-            interest.setStatus(InterestStatus.PENDING.getCode());
-            interest.setUpdatedAt(LocalDateTime.now());
-        } else {
-            interest = new TransferInterest();
-            interest.setFromTeacherId(fromTeacherId);
-            interest.setToTeacherId(toTeacherId);
-            interest.setType(InterestType.ONE_WAY.getCode());
-            interest.setStatus(InterestStatus.PENDING.getCode());
-            interest.setCreatedAt(LocalDateTime.now());
+        if (interestRepository.findExistingInterest(fromTeacherId, toTeacherId).isPresent()) {
+            throw new RuntimeException("Interest already sent");
         }
+
+        TransferInterest interest = new TransferInterest();
+        interest.setFromTeacherId(fromTeacherId);
+        interest.setToTeacherId(toTeacherId);
+        interest.setType(InterestType.ONE_WAY.getCode());
+        interest.setStatus(InterestStatus.PENDING.getCode());
+        interest.setCreatedAt(LocalDateTime.now());
 
         interest = interestRepository.save(interest);
 
@@ -171,49 +168,15 @@ public class InterestService {
         return mapToInterestResponse(interest, fromTeacher, toTeacher, false);
     }
 
-    public void markOutdatedInterests(Long teacherId) {
-        Teacher teacher = teacherRepository.findById(teacherId).orElse(null);
-        if (teacher == null) return;
-        if (teacher.getPreferredLat() == null || teacher.getPreferredLng() == null) return;
-        if (teacher.getSubject() == null || teacher.getSchoolType() == null) return;
-
-        List<TransferInterest> sentInterests = interestRepository.findByFromTeacherIdOrderByCreatedAtDesc(teacherId);
-        for (TransferInterest interest : sentInterests) {
-            if (interest.getTypeEnum() == InterestType.MUTUAL) continue;
-
-            Teacher recipient = teacherRepository.findById(interest.getToTeacherId()).orElse(null);
-            if (recipient == null) continue;
-            if (recipient.getCurrentLat() == null || recipient.getCurrentLng() == null) continue;
-
-            boolean stillCompatible = true;
-
-            if (!teacher.getSubject().equals(recipient.getSubject())) {
-                stillCompatible = false;
-            }
-
-            if (stillCompatible && !teacher.getSchoolType().equals(recipient.getSchoolType())) {
-                stillCompatible = false;
-            }
-
-            if (stillCompatible && teacher.getRadiusKm() != null) {
-                double distance = haversineDistance(
-                        teacher.getPreferredLat(), teacher.getPreferredLng(),
-                        recipient.getCurrentLat(), recipient.getCurrentLng()
-                );
-                if (distance > teacher.getRadiusKm()) {
-                    stillCompatible = false;
-                }
-            }
-
-            boolean wasOutdated = Boolean.TRUE.equals(interest.getIsOutdated());
-            if (!stillCompatible && !wasOutdated) {
-                interest.setIsOutdated(true);
-                interestRepository.save(interest);
-            } else if (stillCompatible && wasOutdated) {
-                interest.setIsOutdated(false);
-                interestRepository.save(interest);
-            }
-        }
+    @Transactional
+    public void clearAllInteractions(Long teacherId) {
+        List<TransferInterest> asSender = interestRepository.findByFromTeacherIdOrderByCreatedAtDesc(teacherId);
+        for (TransferInterest i : asSender) interestRepository.delete(i);
+        List<TransferInterest> asRecipient = interestRepository.findByToTeacherIdOrderByCreatedAtDesc(teacherId);
+        for (TransferInterest i : asRecipient) interestRepository.delete(i);
+        matchResultRepository.deleteByTeacherId(teacherId);
+        matchResultRepository.deleteByMatchedTeacherId(teacherId);
+        notificationRepository.deleteByTeacherId(teacherId);
     }
 
     public void withdrawInterest(Long interestId, Long teacherId) {
@@ -231,17 +194,6 @@ public class InterestService {
         interest.setStatus(InterestStatus.WITHDRAWN.getCode());
         interest.setRespondedAt(LocalDateTime.now());
         interestRepository.save(interest);
-    }
-
-    private double haversineDistance(double lat1, double lng1, double lat2, double lng2) {
-        final double R = 6371.0;
-        double dLat = Math.toRadians(lat2 - lat1);
-        double dLng = Math.toRadians(lng2 - lng1);
-        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
-                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
-                * Math.sin(dLng / 2) * Math.sin(dLng / 2);
-        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        return R * c;
     }
 
     public List<InterestResponse> getSentInterests(Long teacherId) {
@@ -275,9 +227,6 @@ public class InterestService {
         response.setToTeacherId(interest.getToTeacherId());
         response.setType(InterestType.fromCode(interest.getType()));
         response.setStatus(InterestStatus.fromCode(interest.getStatus()));
-        response.setOutdated(Boolean.TRUE.equals(interest.getIsOutdated()));
-        response.setOutdatedReason(Boolean.TRUE.equals(interest.getIsOutdated())
-                ? "Based on your previous preferences" : null);
         response.setCreatedAt(interest.getCreatedAt());
         response.setRespondedAt(interest.getRespondedAt());
 

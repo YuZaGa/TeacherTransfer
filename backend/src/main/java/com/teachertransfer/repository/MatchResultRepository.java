@@ -34,4 +34,8 @@ public interface MatchResultRepository extends JpaRepository<MatchResult, Long> 
     @Modifying
     @Query("DELETE FROM MatchResult m WHERE m.teacherId = :teacherId")
     void deleteByTeacherId(@Param("teacherId") Long teacherId);
+
+    @Modifying
+    @Query("DELETE FROM MatchResult m WHERE m.matchedTeacherId = :teacherId")
+    void deleteByMatchedTeacherId(@Param("teacherId") Long teacherId);
 }

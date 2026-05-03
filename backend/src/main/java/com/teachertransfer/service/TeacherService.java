@@ -57,7 +57,7 @@ public class TeacherService {
         Teacher teacher = teacherRepository.findById(teacherId)
                 .orElseThrow(() -> new RuntimeException("Teacher not found"));
 
-        boolean locationOrPrefsChanged = false;
+        boolean majorChange = false;
 
         if (updateRequest.getName() != null) teacher.setName(updateRequest.getName());
         if (updateRequest.getEmail() != null) teacher.setEmail(updateRequest.getEmail());
@@ -65,20 +65,27 @@ public class TeacherService {
         if (updateRequest.getEmployeeId() != null) teacher.setEmployeeId(updateRequest.getEmployeeId());
         if (updateRequest.getUdiseCode() != null) teacher.setUdiseCode(updateRequest.getUdiseCode());
         if (updateRequest.getSchoolName() != null) teacher.setSchoolName(updateRequest.getSchoolName());
-        if (updateRequest.getSubject() != null) {
+        if (updateRequest.getSubject() != null &&
+            !updateRequest.getSubject().equals(teacher.getSubject() != null ? Subject.fromCode(teacher.getSubject()) : null)) {
             teacher.setSubject(updateRequest.getSubject().getCode());
-            locationOrPrefsChanged = true;
+            majorChange = true;
         }
-        if (updateRequest.getSchoolType() != null) {
+        if (updateRequest.getSchoolType() != null &&
+            !updateRequest.getSchoolType().equals(teacher.getSchoolType() != null ? SchoolType.fromCode(teacher.getSchoolType()) : null)) {
             teacher.setSchoolType(updateRequest.getSchoolType().getCode());
-            locationOrPrefsChanged = true;
+            majorChange = true;
         }
         if (updateRequest.getCurrentLocation() != null) {
+            Integer oldBlockId = teacher.getCurrentBlockId();
+            Integer oldDistrictId = teacher.getCurrentDistrictId();
             teacher.setCurrentDistrictId(updateRequest.getCurrentLocation().getDistrictId());
             teacher.setCurrentBlockId(updateRequest.getCurrentLocation().getBlockId());
             teacher.setCurrentLat(updateRequest.getCurrentLocation().getLat());
             teacher.setCurrentLng(updateRequest.getCurrentLocation().getLng());
-            locationOrPrefsChanged = true;
+            if (!java.util.Objects.equals(oldBlockId, teacher.getCurrentBlockId()) ||
+                !java.util.Objects.equals(oldDistrictId, teacher.getCurrentDistrictId())) {
+                majorChange = true;
+            }
         }
         if (teacher.getCurrentLat() == null || teacher.getCurrentLng() == null) {
             if (teacher.getCurrentBlockId() != null) {
@@ -90,11 +97,16 @@ public class TeacherService {
             }
         }
         if (updateRequest.getPreferredLocation() != null) {
+            Integer oldBlockId = teacher.getPreferredBlockId();
+            Integer oldDistrictId = teacher.getPreferredDistrictId();
             teacher.setPreferredDistrictId(updateRequest.getPreferredLocation().getDistrictId());
             teacher.setPreferredBlockId(updateRequest.getPreferredLocation().getBlockId());
             teacher.setPreferredLat(updateRequest.getPreferredLocation().getLat());
             teacher.setPreferredLng(updateRequest.getPreferredLocation().getLng());
-            locationOrPrefsChanged = true;
+            if (!java.util.Objects.equals(oldBlockId, teacher.getPreferredBlockId()) ||
+                !java.util.Objects.equals(oldDistrictId, teacher.getPreferredDistrictId())) {
+                majorChange = true;
+            }
         }
         if (teacher.getPreferredLat() == null || teacher.getPreferredLng() == null) {
             if (teacher.getPreferredBlockId() != null) {
@@ -107,10 +119,9 @@ public class TeacherService {
         }
         if (updateRequest.getRadiusKm() != null) {
             teacher.setRadiusKm(updateRequest.getRadiusKm());
-            locationOrPrefsChanged = true;
         }
 
-        if (locationOrPrefsChanged) {
+        if (majorChange) {
             teacher.setProfileUpdatedAt(LocalDateTime.now());
         }
 
@@ -119,8 +130,8 @@ public class TeacherService {
 
         updateGeoIndex(teacher);
 
-        if (locationOrPrefsChanged) {
-            interestService.markOutdatedInterests(teacher.getId());
+        if (majorChange) {
+            interestService.clearAllInteractions(teacher.getId());
         }
 
         return mapToResponse(teacher);

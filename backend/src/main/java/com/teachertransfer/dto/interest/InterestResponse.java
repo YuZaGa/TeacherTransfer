@@ -20,8 +20,6 @@ public class InterestResponse {
     private String toTeacherSchool;
     private InterestType type;
     private InterestStatus status;
-    private boolean outdated;
-    private String outdatedReason;
     private LocalDateTime createdAt;
     private LocalDateTime respondedAt;
 
@@ -59,12 +57,6 @@ public class InterestResponse {
 
     public InterestStatus getStatus() { return status; }
     public void setStatus(InterestStatus status) { this.status = status; }
-
-    public boolean isOutdated() { return outdated; }
-    public void setOutdated(boolean outdated) { this.outdated = outdated; }
-
-    public String getOutdatedReason() { return outdatedReason; }
-    public void setOutdatedReason(String outdatedReason) { this.outdatedReason = outdatedReason; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }

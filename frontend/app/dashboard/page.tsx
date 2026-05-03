@@ -36,36 +36,36 @@ export default function DashboardPage() {
     const [sendingInterest, setSendingInterest] = useState<number | null>(null);
     const [sentInterestIds, setSentInterestIds] = useState<Set<number>>(new Set());
 
-    useEffect(() => {
-        const fetchDashboardData = async () => {
-            try {
-                const [meRes, discRes, mutRes, rcvRes, sntRes] = await Promise.all([
-                    api.get('/teacher/me'),
-                    api.get('/matches'),
-                    api.get('/matches/mutual'),
-                    api.get('/interest/received'),
-                    api.get('/interest/sent')
-                ]);
+    const fetchDashboardData = async () => {
+        try {
+            const [meRes, discRes, mutRes, rcvRes, sntRes] = await Promise.all([
+                api.get('/teacher/me'),
+                api.get('/matches'),
+                api.get('/matches/mutual'),
+                api.get('/interest/received'),
+                api.get('/interest/sent')
+            ]);
 
-                setTeacher(meRes.data.data);
-                setDiscoveryMatches(discRes.data.data || []);
-                setMutualMatches(mutRes.data.data || []);
-                setReceivedInterests(rcvRes.data.data || []);
-                setSentInterests(sntRes.data.data || []);
+            setTeacher(meRes.data.data);
+            setDiscoveryMatches(discRes.data.data || []);
+            setMutualMatches(mutRes.data.data || []);
+            setReceivedInterests(rcvRes.data.data || []);
+            setSentInterests(sntRes.data.data || []);
 
-                const sentIds = new Set<number>(
-                    (sntRes.data.data || []).map((i: any) => i.toTeacherId)
-                );
-                setSentInterestIds(sentIds);
-            } catch (err: any) {
-                if (err.response?.status === 401) {
-                    router.push('/login');
-                }
-            } finally {
-                setLoading(false);
+            const sentIds = new Set<number>(
+                (sntRes.data.data || []).map((i: any) => i.toTeacherId)
+            );
+            setSentInterestIds(sentIds);
+        } catch (err: any) {
+            if (err.response?.status === 401) {
+                router.push('/login');
             }
-        };
+        } finally {
+            setLoading(false);
+        }
+    };
 
+    useEffect(() => {
         fetchDashboardData();
     }, [router]);
 
@@ -73,33 +73,11 @@ export default function DashboardPage() {
         setSendingInterest(teacherId);
         try {
             await api.post(`/interest/${teacherId}`);
-            setSentInterestIds(new Set([...Array.from(sentInterestIds), teacherId]));
+            await fetchDashboardData();
         } catch (err) {
             console.error('Failed to send interest', err);
         } finally {
             setSendingInterest(null);
-        }
-    };
-
-    const handleAcceptInterest = async (interestId: number) => {
-        try {
-            await api.post(`/interest/${interestId}/accept`);
-            const rcvRes = await api.get('/interest/received');
-            setReceivedInterests(rcvRes.data.data || []);
-            const mutRes = await api.get('/matches/mutual');
-            setMutualMatches(mutRes.data.data || []);
-        } catch (err) {
-            console.error('Failed to accept interest', err);
-        }
-    };
-
-    const handleRejectInterest = async (interestId: number) => {
-        try {
-            await api.post(`/interest/${interestId}/reject`);
-            const rcvRes = await api.get('/interest/received');
-            setReceivedInterests(rcvRes.data.data || []);
-        } catch (err) {
-            console.error('Failed to reject interest', err);
         }
     };
 
@@ -240,21 +218,17 @@ export default function DashboardPage() {
                                                 <p className="text-sm text-gray-500">{new Date(item.createdAt).toLocaleDateString()}</p>
                                             </div>
                                         </div>
-                                        <div className="flex gap-2">
-                                            <button
-                                                onClick={() => handleRejectInterest(item.id)}
-                                                className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                                            >
-                                                <XCircle className="w-5 h-5" />
-                                            </button>
-                                            <button
-                                                onClick={() => handleAcceptInterest(item.id)}
-                                                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-bold text-sm flex items-center gap-1"
-                                            >
-                                                <CheckCircle2 className="w-4 h-4" />
-                                                Accept
-                                            </button>
-                                        </div>
+                                        <span className={`text-xs font-bold px-3 py-1 rounded-full ${
+                                            item.status === 'ACCEPTED' ? 'bg-green-50 text-green-600' :
+                                            item.status === 'REJECTED' ? 'bg-red-50 text-red-600' :
+                                            item.status === 'WITHDRAWN' ? 'bg-gray-50 text-gray-500' :
+                                            'bg-yellow-50 text-yellow-600'
+                                        }`}>
+                                            {item.status === 'ACCEPTED' ? 'Accepted' :
+                                             item.status === 'REJECTED' ? 'Rejected' :
+                                             item.status === 'WITHDRAWN' ? 'Withdrawn' :
+                                             'Pending'}
+                                        </span>
                                     </div>
                                 ))}
                             </div>
@@ -293,10 +267,13 @@ export default function DashboardPage() {
                                         <span className={`text-xs font-bold px-3 py-1 rounded-full ${
                                             item.status === 'ACCEPTED' ? 'bg-green-50 text-green-600' :
                                             item.status === 'REJECTED' ? 'bg-red-50 text-red-600' :
+                                            item.status === 'WITHDRAWN' ? 'bg-gray-50 text-gray-500' :
                                             'bg-yellow-50 text-yellow-600'
                                         }`}>
                                             {item.status === 'ACCEPTED' ? 'Accepted' :
-                                             item.status === 'REJECTED' ? 'Rejected' : 'Waiting'}
+                                             item.status === 'REJECTED' ? 'Rejected' :
+                                             item.status === 'WITHDRAWN' ? 'Withdrawn' :
+                                             'Waiting'}
                                         </span>
                                     </div>
                                 ))}

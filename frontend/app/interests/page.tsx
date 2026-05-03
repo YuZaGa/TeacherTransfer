@@ -15,8 +15,7 @@ import {
     ShieldCheck,
     Send,
     Phone,
-    School,
-    Info
+    School
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -131,10 +130,10 @@ export default function InterestsPage() {
                     {tab === 'received' && (
                         <>
                             {(() => {
-                                const activeItems = received.filter(i => i.status === 'PENDING' && !i.outdated);
+                                const activeItems = received.filter(i => i.status === 'PENDING');
                                 const rejectedItems = received.filter(i => i.status === 'REJECTED');
                                 const withdrawnItems = received.filter(i => i.status === 'WITHDRAWN');
-                                const staleItems = received.filter(i => i.outdated && i.status === 'PENDING');
+                                const mutualItems = received.filter(i => i.status === 'ACCEPTED');
 
                                 return (
                                     <>
@@ -214,27 +213,31 @@ export default function InterestsPage() {
                                                 </div>
                                             </div>
                                         ))}
-                                        {staleItems.map((item, idx) => (
+                                        {mutualItems.map((item, idx) => (
                                             <div key={item.id}>
                                                 {(idx > 0 || activeItems.length > 0 || rejectedItems.length > 0 || withdrawnItems.length > 0) && <div className="border-t border-gray-100 -mx-4 mb-6" />}
-                                                <div className="bg-amber-50/50 rounded-2xl p-6 shadow-sm border border-amber-200 relative overflow-hidden">
-                                                    <div className="absolute top-0 left-0 w-1.5 h-full bg-amber-400" />
+                                                <div className="bg-white rounded-2xl p-6 shadow-sm border border-green-200 relative overflow-hidden bg-gradient-to-br from-white to-green-50/30">
+                                                    <div className="absolute top-0 left-0 w-1.5 h-full bg-green-500" />
+                                                    <div className="flex items-center gap-1.5 mb-3">
+                                                        <ShieldCheck className="w-4 h-4 text-green-600" />
+                                                        <span className="text-xs font-bold text-green-600 uppercase tracking-wider">Mutual Match</span>
+                                                    </div>
                                                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                                         <div className="flex items-center gap-4">
-                                                            <div className="w-12 h-12 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center font-bold text-lg">
+                                                            <div className="w-12 h-12 rounded-xl bg-green-100 text-green-600 flex items-center justify-center font-bold text-lg">
                                                                 {item.fromTeacherName ? item.fromTeacherName[0] : '?'}
                                                             </div>
                                                             <div>
-                                                                <h3 className="text-lg font-bold text-gray-800">{item.fromTeacherName || 'Teacher'}</h3>
-                                                                <span className="text-xs text-amber-600 font-medium flex items-center gap-1 mt-1">
+                                                                <h3 className="text-lg font-bold text-gray-900">{item.fromTeacherName || 'Teacher'}</h3>
+                                                                <span className="text-xs text-gray-400 flex items-center gap-1 mt-1">
                                                                     <Clock className="w-3 h-3" />
                                                                     {new Date(item.createdAt).toLocaleDateString()}
                                                                 </span>
-                                                                <p className="text-xs text-amber-500 font-medium mt-1 flex items-center gap-1">
-                                                                    <Info className="w-3 h-3" />
-                                                                    {item.outdatedReason || "Out of preference — sender's preferences changed"}
-                                                                </p>
                                                             </div>
+                                                        </div>
+                                                        <div className="space-y-1">
+                                                            {item.fromTeacherSchool && <div className="flex items-center gap-1.5 text-sm text-green-700"><School className="w-4 h-4" />{item.fromTeacherSchool}</div>}
+                                                            {item.fromTeacherPhone && <div className="flex items-center gap-1.5 text-sm font-semibold text-green-800"><Phone className="w-4 h-4" />{item.fromTeacherPhone}</div>}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -260,10 +263,9 @@ export default function InterestsPage() {
                     {tab === 'sent' && (
                         <>
                             {(() => {
-                                const activeItems = sent.filter(i => i.status === 'PENDING' && !i.outdated);
+                                const activeItems = sent.filter(i => i.status === 'PENDING');
                                 const rejectedItems = sent.filter(i => i.status === 'REJECTED');
                                 const withdrawnItems = sent.filter(i => i.status === 'WITHDRAWN');
-                                const staleItems = sent.filter(i => i.outdated && i.status !== 'ACCEPTED');
                                 const mutualItems = sent.filter(i => i.status === 'ACCEPTED');
 
                                 return (
@@ -342,38 +344,9 @@ export default function InterestsPage() {
                                                 </div>
                                             </div>
                                         ))}
-                                        {staleItems.map((item, idx) => (
-                                            <div key={item.id}>
-                                                {(idx > 0 || activeItems.length > 0 || rejectedItems.length > 0 || withdrawnItems.length > 0) && <div className="border-t border-gray-100 -mx-4 mb-6" />}
-                                                <div className="bg-amber-50/50 rounded-2xl p-6 shadow-sm border border-amber-200 relative overflow-hidden">
-                                                    <div className="absolute top-0 left-0 w-1.5 h-full bg-amber-400" />
-                                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                                        <div className="flex items-center gap-4">
-                                                            <div className="w-12 h-12 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center font-bold text-lg">
-                                                                {item.toTeacherName ? item.toTeacherName[0] : '?'}
-                                                            </div>
-                                                            <div>
-                                                                <h3 className="text-lg font-bold text-gray-800">{item.toTeacherName || 'Teacher'}</h3>
-                                                                <span className="text-xs text-amber-600 font-medium flex items-center gap-1 mt-1">
-                                                                    <Clock className="w-3 h-3" />
-                                                                    {new Date(item.createdAt).toLocaleDateString()}
-                                                                </span>
-                                                                <p className="text-xs text-amber-500 font-medium mt-1 flex items-center gap-1">
-                                                                    <Info className="w-3 h-3" />
-                                                                    {item.outdatedReason || "Out of preference — no longer matches your preferences"}
-                                                                </p>
-                                                            </div>
-                                                        </div>
-                                                        <button onClick={() => handleWithdraw(item.id)} disabled={processing !== null} className="px-5 py-2.5 text-sm font-bold text-amber-700 bg-amber-100 hover:bg-amber-200 rounded-xl transition-colors flex items-center gap-1.5">
-                                                            {processing === item.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <><XCircle className="w-4 h-4" /> Withdraw</>}
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))}
                                         {mutualItems.map((item, idx) => (
                                             <div key={item.id}>
-                                                {(idx > 0 || activeItems.length > 0 || rejectedItems.length > 0 || withdrawnItems.length > 0 || staleItems.length > 0) && <div className="border-t border-gray-100 -mx-4 mb-6" />}
+                                                {(idx > 0 || activeItems.length > 0 || rejectedItems.length > 0 || withdrawnItems.length > 0) && <div className="border-t border-gray-100 -mx-4 mb-6" />}
                                                 <div className="bg-white rounded-2xl p-6 shadow-sm border border-green-200 relative overflow-hidden bg-gradient-to-br from-white to-green-50/30">
                                                     <div className="absolute top-0 left-0 w-1.5 h-full bg-green-500" />
                                                     <div className="flex items-center gap-1.5 mb-3">
