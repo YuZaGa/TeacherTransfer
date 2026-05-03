@@ -53,6 +53,16 @@ public class InterestController {
         return ResponseEntity.ok(ApiResponse.success("Interest rejected", response));
     }
 
+    @DeleteMapping("/{interestId}")
+    public ResponseEntity<ApiResponse<Void>> withdrawInterest(@PathVariable Long interestId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String token = authentication.getCredentials().toString();
+        Long teacherId = jwtUtil.extractTeacherId(token);
+
+        interestService.withdrawInterest(interestId, teacherId);
+        return ResponseEntity.ok(ApiResponse.success("Interest withdrawn", null));
+    }
+
     @GetMapping("/sent")
     public ResponseEntity<ApiResponse<List<InterestResponse>>> getSentInterests() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();

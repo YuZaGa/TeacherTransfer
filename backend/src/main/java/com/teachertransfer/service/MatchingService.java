@@ -4,6 +4,7 @@ import com.teachertransfer.dto.match.MatchResponse;
 import com.teachertransfer.entity.MatchResult;
 import com.teachertransfer.entity.Teacher;
 import com.teachertransfer.entity.TeacherGeoIndex;
+import com.teachertransfer.enums.InterestType;
 import com.teachertransfer.enums.MatchType;
 import com.teachertransfer.enums.SchoolType;
 import com.teachertransfer.enums.Subject;
@@ -122,16 +123,28 @@ public class MatchingService {
                 }
             }
 
-            boolean isMutual = isMutualMatch(teacher, candidate, candidateTeacher);
+            boolean isGeographicallyMutual = isMutualMatch(teacher, candidate, candidateTeacher);
 
-            int matchTypeCode = isMutual ? MatchType.MUTUAL.getCode() : MatchType.POTENTIAL.getCode();
-            boolean hasInterestFromMe = transferInterestRepository
-                    .findExistingInterest(teacher.getId(), candidate.getTeacherId()).isPresent();
-            if (hasInterestFromMe && !isMutual) {
+            var interestFromMe = transferInterestRepository
+                    .findExistingInterest(teacher.getId(), candidate.getTeacherId());
+            var interestToMe = transferInterestRepository
+                    .findExistingInterest(candidate.getTeacherId(), teacher.getId());
+
+            boolean hasInterestFromMe = interestFromMe.isPresent();
+            boolean hasMutualAcceptance =
+                interestFromMe.filter(i -> InterestType.fromCode(i.getType()) == InterestType.MUTUAL).isPresent() ||
+                interestToMe.filter(i -> InterestType.fromCode(i.getType()) == InterestType.MUTUAL).isPresent();
+
+            int matchTypeCode;
+            if (hasMutualAcceptance) {
+                matchTypeCode = MatchType.MUTUAL.getCode();
+            } else if (hasInterestFromMe) {
                 matchTypeCode = MatchType.INTEREST_SENT.getCode();
+            } else {
+                matchTypeCode = MatchType.POTENTIAL.getCode();
             }
 
-            double score = calculateScore(distance, isMutual, candidateTeacher);
+            double score = calculateScore(distance, isGeographicallyMutual, candidateTeacher);
 
             MatchResult result = new MatchResult();
             result.setTeacherId(teacher.getId());

@@ -41,7 +41,7 @@ public class Notification {
     @Column(name = "message", nullable = false, columnDefinition = "TEXT")
     private String message;
 
-    @Column(name = "data", columnDefinition = "JSONB")
+    @Column(name = "data", columnDefinition = "TEXT")
     private String data;
 
     @Column(name = "related_teacher_id")

@@ -10,7 +10,8 @@ public enum InterestStatus {
     PENDING(1, "Pending"),
     ACCEPTED(2, "Accepted"),
     REJECTED(3, "Rejected"),
-    EXPIRED(4, "Expired");
+    EXPIRED(4, "Expired"),
+    WITHDRAWN(5, "Withdrawn");
 
     private final int code;
     private final String displayName;

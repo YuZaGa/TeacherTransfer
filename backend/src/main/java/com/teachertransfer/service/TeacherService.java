@@ -10,6 +10,7 @@ import com.teachertransfer.repository.TeacherGeoIndexRepository;
 import com.teachertransfer.repository.TeacherRepository;
 import com.teachertransfer.util.GeohashUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -27,6 +28,10 @@ public class TeacherService {
 
     @Autowired
     private BlockRepository blockRepository;
+
+    @Autowired
+    @Lazy
+    private InterestService interestService;
 
     public Teacher getCurrentTeacher() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -113,6 +118,10 @@ public class TeacherService {
         teacher = teacherRepository.save(teacher);
 
         updateGeoIndex(teacher);
+
+        if (locationOrPrefsChanged) {
+            interestService.markOutdatedInterests(teacher.getId());
+        }
 
         return mapToResponse(teacher);
     }

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
-import { User, LogIn, UserPlus, Home, Map, LogOut, LayoutDashboard, ArrowRightLeft, Menu, X } from 'lucide-react';
+import { User, LogIn, UserPlus, Home, Map, LogOut, LayoutDashboard, ArrowRightLeft, Bell, Menu, X } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -26,6 +26,7 @@ export default function Navbar() {
         ? [
               { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
               { name: 'Matches', href: '/matches', icon: Map },
+              { name: 'Interests', href: '/interests', icon: Bell },
               { name: 'Profile', href: '/profile', icon: User },
           ]
         : [
