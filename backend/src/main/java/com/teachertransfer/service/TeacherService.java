@@ -58,6 +58,7 @@ public class TeacherService {
                 .orElseThrow(() -> new RuntimeException("Teacher not found"));
 
         boolean majorChange = false;
+        boolean rebuildCache = false;
 
         if (updateRequest.getName() != null) teacher.setName(updateRequest.getName());
         if (updateRequest.getEmail() != null) teacher.setEmail(updateRequest.getEmail());
@@ -75,9 +76,13 @@ public class TeacherService {
             teacher.setSchoolType(updateRequest.getSchoolType().getCode());
             majorChange = true;
         }
+        boolean currentLatLngChanged = false;
         if (updateRequest.getCurrentLocation() != null) {
             Integer oldBlockId = teacher.getCurrentBlockId();
             Integer oldDistrictId = teacher.getCurrentDistrictId();
+            currentLatLngChanged = teacher.getCurrentLat() != null && (
+                Math.abs(updateRequest.getCurrentLocation().getLat() - teacher.getCurrentLat()) > 0.00001 ||
+                Math.abs(updateRequest.getCurrentLocation().getLng() - teacher.getCurrentLng()) > 0.00001);
             teacher.setCurrentDistrictId(updateRequest.getCurrentLocation().getDistrictId());
             teacher.setCurrentBlockId(updateRequest.getCurrentLocation().getBlockId());
             teacher.setCurrentLat(updateRequest.getCurrentLocation().getLat());
@@ -96,9 +101,13 @@ public class TeacherService {
                 }
             }
         }
+        boolean preferredLatLngChanged = false;
         if (updateRequest.getPreferredLocation() != null) {
             Integer oldBlockId = teacher.getPreferredBlockId();
             Integer oldDistrictId = teacher.getPreferredDistrictId();
+            preferredLatLngChanged = teacher.getPreferredLat() != null && (
+                Math.abs(updateRequest.getPreferredLocation().getLat() - teacher.getPreferredLat()) > 0.00001 ||
+                Math.abs(updateRequest.getPreferredLocation().getLng() - teacher.getPreferredLng()) > 0.00001);
             teacher.setPreferredDistrictId(updateRequest.getPreferredLocation().getDistrictId());
             teacher.setPreferredBlockId(updateRequest.getPreferredLocation().getBlockId());
             teacher.setPreferredLat(updateRequest.getPreferredLocation().getLat());
@@ -121,7 +130,9 @@ public class TeacherService {
             teacher.setRadiusKm(updateRequest.getRadiusKm());
         }
 
-        if (majorChange) {
+        rebuildCache = majorChange || updateRequest.getRadiusKm() != null || currentLatLngChanged || preferredLatLngChanged;
+
+        if (rebuildCache) {
             teacher.setProfileUpdatedAt(LocalDateTime.now());
         }
 
@@ -190,10 +201,12 @@ public class TeacherService {
             geoIndex.setTeacherId(teacher.getId());
         }
 
-        String geohash = GeohashUtil.encode(teacher.getPreferredLat(), teacher.getPreferredLng());
-        geoIndex.setGeohash(geohash);
-        String currentGeohash = GeohashUtil.encode(teacher.getCurrentLat(), teacher.getCurrentLng());
-        geoIndex.setCurrentGeohash(currentGeohash);
+        String geohash6 = GeohashUtil.encode(teacher.getPreferredLat(), teacher.getPreferredLng());
+        geoIndex.setGeohash6(geohash6);
+        String currentGeohash6 = GeohashUtil.encode(teacher.getCurrentLat(), teacher.getCurrentLng());
+        geoIndex.setCurrentGeohash6(currentGeohash6);
+        geoIndex.setGeohash5(geohash6 != null ? geohash6.substring(0, Math.min(5, geohash6.length())) : null);
+        geoIndex.setCurrentGeohash5(currentGeohash6 != null ? currentGeohash6.substring(0, Math.min(5, currentGeohash6.length())) : null);
         geoIndex.setSubject(teacher.getSubject());
         geoIndex.setSchoolType(teacher.getSchoolType());
         geoIndex.setCurrentLat(teacher.getCurrentLat());

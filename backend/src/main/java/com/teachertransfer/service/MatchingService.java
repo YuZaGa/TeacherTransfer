@@ -89,13 +89,39 @@ public class MatchingService {
     private List<MatchResult> generateAndCacheMatches(Teacher teacher) {
         matchResultRepository.deleteByTeacherId(teacher.getId());
 
+        int radiusKm = teacher.getRadiusKm() != null ? teacher.getRadiusKm() : 30;
         Set<String> searchArea = GeohashUtil.encodeWithNeighbors(
-                teacher.getPreferredLat(), teacher.getPreferredLng()
+                teacher.getPreferredLat(), teacher.getPreferredLng(), radiusKm
         );
 
-        List<TeacherGeoIndex> candidates = teacherGeoIndexRepository.findCandidatesByGeohashes(
-                searchArea, teacher.getSubject(), teacher.getSchoolType(), teacher.getId()
-        );
+        java.util.List<TeacherGeoIndex> candidates;
+        if (radiusKm <= 2) {
+            java.util.List<TeacherGeoIndex> fromGeohash = teacherGeoIndexRepository.findByGeohash6(
+                    searchArea, teacher.getSubject(), teacher.getSchoolType(), teacher.getId());
+            java.util.List<TeacherGeoIndex> fromCurrent = teacherGeoIndexRepository.findByCurrentGeohash6(
+                    searchArea, teacher.getSubject(), teacher.getSchoolType(), teacher.getId());
+            java.util.Set<Long> seen = new java.util.HashSet<>();
+            candidates = new java.util.ArrayList<>();
+            for (TeacherGeoIndex c : fromGeohash) {
+                if (seen.add(c.getTeacherId())) candidates.add(c);
+            }
+            for (TeacherGeoIndex c : fromCurrent) {
+                if (seen.add(c.getTeacherId())) candidates.add(c);
+            }
+        } else {
+            java.util.List<TeacherGeoIndex> fromGeohash = teacherGeoIndexRepository.findByGeohash5(
+                    searchArea, teacher.getSubject(), teacher.getSchoolType(), teacher.getId());
+            java.util.List<TeacherGeoIndex> fromCurrent = teacherGeoIndexRepository.findByCurrentGeohash5(
+                    searchArea, teacher.getSubject(), teacher.getSchoolType(), teacher.getId());
+            java.util.Set<Long> seen = new java.util.HashSet<>();
+            candidates = new java.util.ArrayList<>();
+            for (TeacherGeoIndex c : fromGeohash) {
+                if (seen.add(c.getTeacherId())) candidates.add(c);
+            }
+            for (TeacherGeoIndex c : fromCurrent) {
+                if (seen.add(c.getTeacherId())) candidates.add(c);
+            }
+        }
 
         LocalDateTime ghostCutoff = LocalDateTime.now().minusDays(ghostInactiveDays);
         List<MatchResult> results = new ArrayList<>();

@@ -67,10 +67,14 @@ public class InterestService {
 
         if (isMutual) {
             interest.setType(InterestType.MUTUAL.getCode());
+            interest.setStatus(InterestStatus.ACCEPTED.getCode());
+            interest.setRespondedAt(LocalDateTime.now());
             interest = interestRepository.save(interest);
 
             TransferInterest reverse = interestRepository.findExistingInterest(toTeacherId, fromTeacherId).get();
             reverse.setType(InterestType.MUTUAL.getCode());
+            reverse.setStatus(InterestStatus.ACCEPTED.getCode());
+            reverse.setRespondedAt(LocalDateTime.now());
             interestRepository.save(reverse);
         }
 

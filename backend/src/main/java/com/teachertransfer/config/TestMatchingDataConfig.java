@@ -145,11 +145,16 @@ public class TestMatchingDataConfig {
 
                 TeacherGeoIndex gi = new TeacherGeoIndex();
                 gi.setTeacherId(t.getId());
-                gi.setGeohash(GeohashUtil.encode(s.preferredLat, s.preferredLng));
+                String gh6 = GeohashUtil.encode(s.preferredLat, s.preferredLng);
+                gi.setGeohash6(gh6);
+                gi.setGeohash5(gh6.substring(0, Math.min(5, gh6.length())));
                 gi.setSubject(s.subject.getCode());
                 gi.setSchoolType(s.schoolType.getCode());
                 gi.setCurrentLat(s.currentLat);
                 gi.setCurrentLng(s.currentLng);
+                String curGh6 = GeohashUtil.encode(s.currentLat, s.currentLng);
+                gi.setCurrentGeohash6(curGh6);
+                gi.setCurrentGeohash5(curGh6.substring(0, Math.min(5, curGh6.length())));
                 gi.setPreferredLat(s.preferredLat);
                 gi.setPreferredLng(s.preferredLng);
                 gi.setRadiusKm(s.radiusKm);
@@ -184,13 +189,18 @@ public class TestMatchingDataConfig {
 
         TeacherGeoIndex gi = new TeacherGeoIndex();
         gi.setTeacherId(t.getId());
-        gi.setGeohash(GeohashUtil.encode(t.getPreferredLat(), t.getPreferredLng()));
         gi.setSubject(t.getSubject() != null ? t.getSubject() : subject.getCode());
         gi.setSchoolType(t.getSchoolType() != null ? t.getSchoolType() : schoolType.getCode());
         gi.setCurrentLat(t.getCurrentLat());
         gi.setCurrentLng(t.getCurrentLng());
+        String curGh6 = GeohashUtil.encode(t.getCurrentLat(), t.getCurrentLng());
+        gi.setCurrentGeohash6(curGh6);
+        gi.setCurrentGeohash5(curGh6.substring(0, Math.min(5, curGh6.length())));
         gi.setPreferredLat(t.getPreferredLat());
         gi.setPreferredLng(t.getPreferredLng());
+        String prefGh6 = GeohashUtil.encode(t.getPreferredLat(), t.getPreferredLng());
+        gi.setGeohash6(prefGh6);
+        gi.setGeohash5(prefGh6.substring(0, Math.min(5, prefGh6.length())));
         gi.setRadiusKm(t.getRadiusKm() != null ? t.getRadiusKm() : 50);
         gi.setIsPremium(true);
         geoIndexRepository.save(gi);
