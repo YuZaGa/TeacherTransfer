@@ -8,16 +8,14 @@ import {
     MapPin,
     Loader2,
     Heart,
-    SkipForward,
     CheckCircle2,
     ShieldCheck,
-    Eye,
     Shield,
     Lightbulb
 } from 'lucide-react';
 import Link from 'next/link';
 
-type TabType = 'discovery' | 'mutual' | 'interest-sent';
+type TabType = 'discovery' | 'mutual';
 
 export default function MatchesPage() {
     const router = useRouter();
@@ -25,7 +23,6 @@ export default function MatchesPage() {
     const [tab, setTab] = useState<TabType>('discovery');
     const [discoveryMatches, setDiscoveryMatches] = useState<any[]>([]);
     const [mutualMatches, setMutualMatches] = useState<any[]>([]);
-    const [interestSentMatches, setInterestSentMatches] = useState<any[]>([]);
     const [sendingInterest, setSendingInterest] = useState<number | null>(null);
     const [sentInterestIds, setSentInterestIds] = useState<Set<number>>(new Set());
     const [teacher, setTeacher] = useState<any>(null);
@@ -33,18 +30,16 @@ export default function MatchesPage() {
     useEffect(() => {
         const fetchAll = async () => {
             try {
-                const [meRes, discRes, mutRes, sentRes, sntInterestRes] = await Promise.all([
+                const [meRes, discRes, mutRes, sntInterestRes] = await Promise.all([
                     api.get('/teacher/me'),
                     api.get('/matches'),
                     api.get('/matches/mutual'),
-                    api.get('/matches/interest-sent'),
                     api.get('/interest/sent')
                 ]);
 
                 setTeacher(meRes.data.data);
                 setDiscoveryMatches(discRes.data.data || []);
                 setMutualMatches(mutRes.data.data || []);
-                setInterestSentMatches(sentRes.data.data || []);
 
                 const sentIds = new Set<number>(
                     (sntInterestRes.data.data || []).map((i: any) => i.toTeacherId)
@@ -66,7 +61,7 @@ export default function MatchesPage() {
         setSendingInterest(teacherId);
         try {
             await api.post(`/interest/${teacherId}`);
-            setSentInterestIds(new Set([...Array.from(sentInterestIds), teacherId]));
+            setSentInterestIds(prev => new Set(prev).add(teacherId));
         } catch (err) {
             console.error('Failed to send interest', err);
         } finally {
@@ -82,9 +77,7 @@ export default function MatchesPage() {
         );
     }
 
-    const currentMatches = tab === 'discovery' ? discoveryMatches
-        : tab === 'mutual' ? mutualMatches
-        : interestSentMatches;
+    const currentMatches = tab === 'discovery' ? discoveryMatches : mutualMatches;
 
     const preferredArea = teacher?.preferredLocation?.blockName
         || teacher?.preferredLocation?.districtName
@@ -108,13 +101,6 @@ export default function MatchesPage() {
                         <ShieldCheck className="w-4 h-4" />
                         Mutual Matches ({mutualMatches.length})
                     </button>
-                    <button
-                        onClick={() => setTab('interest-sent')}
-                        className={`px-5 py-3 rounded-xl font-bold text-sm transition-all flex items-center gap-1.5 ${tab === 'interest-sent' ? 'bg-white text-purple-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-                    >
-                        <Eye className="w-4 h-4" />
-                        Sent ({interestSentMatches.length})
-                    </button>
                 </div>
 
                 {tab === 'discovery' && (
@@ -130,18 +116,12 @@ export default function MatchesPage() {
                     </div>
                 )}
 
-                {tab === 'interest-sent' && (
-                    <div className="mb-6 bg-purple-50 border border-purple-100 rounded-xl px-4 py-3 text-sm text-purple-700">
-                        Teachers you have expressed interest in. Waiting for their response to unlock contact details.
-                    </div>
-                )}
-
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {currentMatches.map((match: any) => {
                         const t = match.teacher || {};
                         const teacherId = t.id;
                         const distanceKm = t.distanceKm || match.distanceKm;
-                        const isMutual = match.isMutual || tab === 'mutual';
+                        const isMutual = tab === 'mutual';
                         const isSent = sentInterestIds.has(teacherId);
 
                         return (
@@ -221,9 +201,6 @@ export default function MatchesPage() {
                                                     Interested
                                                 </>
                                             )}
-                                        </button>
-                                        <button className="p-3 bg-gray-50 text-gray-400 rounded-xl hover:bg-gray-100 transition-colors">
-                                            <SkipForward className="w-5 h-5" />
                                         </button>
                                     </div>
                                 )}

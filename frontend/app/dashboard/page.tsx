@@ -19,7 +19,6 @@ import {
     Eye,
     Send,
     ShieldCheck,
-    SkipForward,
     MapPin
 } from 'lucide-react';
 import Link from 'next/link';
@@ -341,9 +340,6 @@ function MatchCard({ match, sendingInterest, sentInterestIds, onSendInterest }: 
                             Interested
                         </>
                     )}
-                </button>
-                <button className="p-2.5 bg-gray-50 text-gray-400 rounded-xl hover:bg-gray-100 transition-colors">
-                    <SkipForward className="w-4 h-4" />
                 </button>
             </div>
         </div>
