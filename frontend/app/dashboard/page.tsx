@@ -52,7 +52,9 @@ export default function DashboardPage() {
             setSentInterests(sntRes.data.data || []);
 
             const sentIds = new Set<number>(
-                (sntRes.data.data || []).map((i: any) => i.toTeacherId)
+                (sntRes.data.data || [])
+                    .filter((i: any) => i.status === 'PENDING' || i.status === 'ACCEPTED')
+                    .map((i: any) => i.toTeacherId)
             );
             setSentInterestIds(sentIds);
         } catch (err: any) {

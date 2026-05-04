@@ -42,7 +42,9 @@ export default function MatchesPage() {
                 setMutualMatches(mutRes.data.data || []);
 
                 const sentIds = new Set<number>(
-                    (sntInterestRes.data.data || []).map((i: any) => i.toTeacherId)
+                    (sntInterestRes.data.data || [])
+                        .filter((i: any) => i.status === 'PENDING' || i.status === 'ACCEPTED')
+                        .map((i: any) => i.toTeacherId)
                 );
                 setSentInterestIds(sentIds);
             } catch (err: any) {
