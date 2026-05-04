@@ -316,6 +316,29 @@ public class AuthService {
         return ApiResponse.success("Profile setup complete", onboardingResponse);
     }
 
+    // ==================== Password Reset ====================
+
+    @Transactional
+    public ApiResponse<Void> resetPassword(ResetPasswordRequest request) {
+        String email = request.getEmail().trim().toLowerCase();
+
+        Teacher teacher = teacherRepository.findByEmail(email).orElse(null);
+        if (teacher == null) {
+            return ApiResponse.error("No account found with this email address");
+        }
+
+        ApiResponse<EmailOtpResponse> otpResponse = emailVerificationService.verifyPasswordResetOtp(email, request.getOtp());
+        if (!otpResponse.isSuccess()) {
+            return ApiResponse.error(otpResponse.getMessage());
+        }
+
+        teacher.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        teacherRepository.save(teacher);
+
+        log.info("Password reset successfully for {}", email);
+        return ApiResponse.success("Password reset successfully");
+    }
+
     // ==================== Email + Password Login ====================
 
     public ApiResponse<AuthResponse> login(LoginRequest request) {

@@ -161,6 +161,90 @@ public class EmailVerificationService {
         return true;
     }
 
+    @Transactional
+    public ApiResponse<EmailOtpResponse> sendPasswordResetOtp(String email) {
+        if (!isValidEmail(email)) {
+            return ApiResponse.error("Invalid email address");
+        }
+
+        OtpVerification recent = otpRepository
+            .findTopByEmailAndPurposeOrderByCreatedAtDesc(email, OtpPurpose.PASSWORD_RESET.getCode()).orElse(null);
+
+        if (recent != null) {
+            long secondsSinceLastOtp = java.time.Duration.between(recent.getCreatedAt(), LocalDateTime.now()).getSeconds();
+            if (secondsSinceLastOtp < RESEND_COOLDOWN_SECONDS) {
+                long waitSeconds = RESEND_COOLDOWN_SECONDS - secondsSinceLastOtp;
+                return ApiResponse.error("Please wait " + waitSeconds + " seconds before requesting a new OTP");
+            }
+        }
+
+        String otp = generateOtp();
+        String otpHash = hashOtp(otp);
+
+        OtpVerification entity = OtpVerification.builder()
+            .email(email)
+            .otpHash(otpHash)
+            .purpose(OtpPurpose.PASSWORD_RESET.getCode())
+            .attempts(0)
+            .verified(false)
+            .expiresAt(LocalDateTime.now().plusSeconds(OTP_EXPIRY_SECONDS))
+            .build();
+
+        otpRepository.save(entity);
+
+        try {
+            emailService.sendOtpEmail(email, otp, EmailType.PASSWORD_RESET_OTP);
+            log.info("Password reset OTP sent to {}", email);
+            return ApiResponse.success("OTP sent to " + email, new EmailOtpResponse("OTP sent successfully"));
+        } catch (Exception e) {
+            log.error("Failed to send password reset OTP email to {}: {}", email, e.getMessage());
+            return ApiResponse.error("Failed to send OTP. Please try again.");
+        }
+    }
+
+    @Transactional
+    public ApiResponse<EmailOtpResponse> verifyPasswordResetOtp(String email, String otp) {
+        if (!isValidEmail(email)) {
+            return ApiResponse.error("Invalid email address");
+        }
+
+        List<OtpVerification> validOtps = otpRepository.findValidEmailOtps(
+            email,
+            OtpPurpose.PASSWORD_RESET.getCode(),
+            LocalDateTime.now(),
+            maxAttempts
+        );
+
+        if (validOtps.isEmpty()) {
+            OtpVerification latest = otpRepository
+                .findTopByEmailAndPurposeOrderByCreatedAtDesc(email, OtpPurpose.PASSWORD_RESET.getCode()).orElse(null);
+            if (latest != null && latest.getAttempts() >= maxAttempts) {
+                return ApiResponse.error("Maximum attempts exceeded. Please request a new OTP.");
+            }
+            return ApiResponse.error("OTP has expired. Please request a new one.");
+        }
+
+        OtpVerification record = validOtps.get(0);
+
+        if (!hashOtp(otp).equals(record.getOtpHash())) {
+            record.setAttempts(record.getAttempts() + 1);
+            otpRepository.save(record);
+
+            int remainingAttempts = maxAttempts - record.getAttempts();
+            if (remainingAttempts <= 0) {
+                return ApiResponse.error("Maximum attempts exceeded. Please request a new OTP.");
+            }
+            return ApiResponse.error("Invalid OTP. " + remainingAttempts + " attempts remaining.");
+        }
+
+        record.setVerified(true);
+        otpRepository.save(record);
+
+        log.info("Password reset OTP verified successfully for {}", email);
+        return ApiResponse.success("OTP verified successfully",
+            new EmailOtpResponse("OTP verified successfully"));
+    }
+
     private String generateOtp() {
         SecureRandom random = new SecureRandom();
         StringBuilder otp = new StringBuilder(OTP_LENGTH);

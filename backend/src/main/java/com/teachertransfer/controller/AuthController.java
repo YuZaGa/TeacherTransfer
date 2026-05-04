@@ -62,6 +62,20 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping("/password-reset/send-otp")
+    public ResponseEntity<ApiResponse<EmailOtpResponse>> sendPasswordResetOtp(
+            @Valid @RequestBody SendEmailOtpRequest request) {
+        ApiResponse<EmailOtpResponse> response = emailVerificationService.sendPasswordResetOtp(request.getEmail());
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/password-reset/reset")
+    public ResponseEntity<ApiResponse<Void>> resetPassword(
+            @Valid @RequestBody ResetPasswordRequest request) {
+        ApiResponse<Void> response = authService.resetPassword(request);
+        return ResponseEntity.ok(response);
+    }
+
     @PostMapping("/onboarding/complete")
     public ResponseEntity<ApiResponse<OnboardingResponse>> completeOnboarding(
             @Valid @RequestBody OnboardingRequest request) {
