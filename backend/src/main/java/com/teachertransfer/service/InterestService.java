@@ -12,6 +12,8 @@ import com.teachertransfer.repository.MatchResultRepository;
 import com.teachertransfer.repository.NotificationRepository;
 import com.teachertransfer.repository.TeacherRepository;
 import com.teachertransfer.repository.TransferInterestRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +24,8 @@ import java.util.stream.Collectors;
 
 @Service
 public class InterestService {
+
+    private static final Logger log = LoggerFactory.getLogger(InterestService.class);
 
     @Autowired
     private TransferInterestRepository interestRepository;
@@ -48,16 +52,26 @@ public class InterestService {
         Teacher toTeacher = teacherRepository.findById(toTeacherId)
                 .orElseThrow(() -> new RuntimeException("Teacher not found"));
 
-        if (interestRepository.findExistingInterest(fromTeacherId, toTeacherId).isPresent()) {
-            throw new RuntimeException("Interest already sent");
+        TransferInterest interest;
+        var existing = interestRepository.findExistingInterest(fromTeacherId, toTeacherId);
+        if (existing.isPresent()) {
+            interest = existing.get();
+            if (interest.getStatus() == InterestStatus.PENDING.getCode() ||
+                interest.getStatus() == InterestStatus.ACCEPTED.getCode()) {
+                throw new RuntimeException("Interest already sent");
+            }
+            interest.setStatus(InterestStatus.PENDING.getCode());
+            interest.setType(InterestType.ONE_WAY.getCode());
+            interest.setCreatedAt(LocalDateTime.now());
+            interest.setRespondedAt(null);
+        } else {
+            interest = new TransferInterest();
+            interest.setFromTeacherId(fromTeacherId);
+            interest.setToTeacherId(toTeacherId);
+            interest.setType(InterestType.ONE_WAY.getCode());
+            interest.setStatus(InterestStatus.PENDING.getCode());
+            interest.setCreatedAt(LocalDateTime.now());
         }
-
-        TransferInterest interest = new TransferInterest();
-        interest.setFromTeacherId(fromTeacherId);
-        interest.setToTeacherId(toTeacherId);
-        interest.setType(InterestType.ONE_WAY.getCode());
-        interest.setStatus(InterestStatus.PENDING.getCode());
-        interest.setCreatedAt(LocalDateTime.now());
 
         interest = interestRepository.save(interest);
 
@@ -169,6 +183,13 @@ public class InterestService {
         interest.setRespondedAt(LocalDateTime.now());
         interest = interestRepository.save(interest);
 
+        try {
+            matchResultRepository.deleteByTeacherIdAndMatchedTeacherId(teacherId, interest.getFromTeacherId());
+            matchResultRepository.deleteByTeacherIdAndMatchedTeacherId(interest.getFromTeacherId(), teacherId);
+        } catch (Exception e) {
+            log.warn("Failed to cleanup match results on reject: {}", e.getMessage());
+        }
+
         teacherService.touchInteraction(teacherId);
 
         Teacher fromTeacher = teacherRepository.findById(interest.getFromTeacherId()).orElse(null);
@@ -203,6 +224,13 @@ public class InterestService {
         interest.setStatus(InterestStatus.WITHDRAWN.getCode());
         interest.setRespondedAt(LocalDateTime.now());
         interestRepository.save(interest);
+
+        try {
+            matchResultRepository.deleteByTeacherIdAndMatchedTeacherId(teacherId, interest.getToTeacherId());
+            matchResultRepository.deleteByTeacherIdAndMatchedTeacherId(interest.getToTeacherId(), teacherId);
+        } catch (Exception e) {
+            log.warn("Failed to cleanup match results on withdraw: {}", e.getMessage());
+        }
     }
 
     public List<InterestResponse> getSentInterests(Long teacherId) {
