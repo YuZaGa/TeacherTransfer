@@ -22,6 +22,9 @@ public class InterestResponse {
     private InterestStatus status;
     private LocalDateTime createdAt;
     private LocalDateTime respondedAt;
+    private String fromTeacherBlockName;
+    private String toTeacherBlockName;
+    private Double distanceKm;
 
     public InterestResponse() {}
 
@@ -63,4 +66,13 @@ public class InterestResponse {
 
     public LocalDateTime getRespondedAt() { return respondedAt; }
     public void setRespondedAt(LocalDateTime respondedAt) { this.respondedAt = respondedAt; }
+
+    public String getFromTeacherBlockName() { return fromTeacherBlockName; }
+    public void setFromTeacherBlockName(String fromTeacherBlockName) { this.fromTeacherBlockName = fromTeacherBlockName; }
+
+    public String getToTeacherBlockName() { return toTeacherBlockName; }
+    public void setToTeacherBlockName(String toTeacherBlockName) { this.toTeacherBlockName = toTeacherBlockName; }
+
+    public Double getDistanceKm() { return distanceKm; }
+    public void setDistanceKm(Double distanceKm) { this.distanceKm = distanceKm; }
 }

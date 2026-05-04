@@ -213,8 +213,8 @@ export default function DashboardPage() {
                                                 <Bell className="w-5 h-5" />
                                             </div>
                                             <div>
-                                                <p className="font-bold text-gray-900">{item.fromTeacherName || 'A teacher'}</p>
-                                                <p className="text-sm text-gray-500">{new Date(item.createdAt).toLocaleDateString()}</p>
+                                                <p className="font-bold text-gray-900">Under {item.fromTeacherBlockName || 'Unknown'} Block</p>
+                                                <p className="text-sm text-gray-500">{item.distanceKm ? Math.round(item.distanceKm) + ' km from your preferred location' : ''} &middot; {new Date(item.createdAt).toLocaleDateString()}</p>
                                             </div>
                                         </div>
                                         <span className={`text-xs font-bold px-3 py-1 rounded-full ${
@@ -259,8 +259,8 @@ export default function DashboardPage() {
                                                 <Send className="w-5 h-5" />
                                             </div>
                                             <div>
-                                                <p className="font-bold text-gray-900">{item.toTeacherName || 'A teacher'}</p>
-                                                <p className="text-sm text-gray-500">{new Date(item.createdAt).toLocaleDateString()}</p>
+                                                <p className="font-bold text-gray-900">Under {item.toTeacherBlockName || 'Unknown'} Block</p>
+                                                <p className="text-sm text-gray-500">{item.distanceKm ? Math.round(item.distanceKm) + ' km from your preferred location' : ''} &middot; {new Date(item.createdAt).toLocaleDateString()}</p>
                                             </div>
                                         </div>
                                         <span className={`text-xs font-bold px-3 py-1 rounded-full ${

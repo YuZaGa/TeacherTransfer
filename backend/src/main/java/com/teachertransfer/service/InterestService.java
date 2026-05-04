@@ -1,11 +1,13 @@
 package com.teachertransfer.service;
 
 import com.teachertransfer.dto.interest.InterestResponse;
+import com.teachertransfer.entity.Block;
 import com.teachertransfer.entity.Notification;
 import com.teachertransfer.entity.Teacher;
 import com.teachertransfer.entity.TransferInterest;
 import com.teachertransfer.enums.InterestStatus;
 import com.teachertransfer.enums.InterestType;
+import com.teachertransfer.repository.BlockRepository;
 import com.teachertransfer.repository.MatchResultRepository;
 import com.teachertransfer.repository.NotificationRepository;
 import com.teachertransfer.repository.TeacherRepository;
@@ -35,6 +37,9 @@ public class InterestService {
 
     @Autowired
     private MatchResultRepository matchResultRepository;
+
+    @Autowired
+    private BlockRepository blockRepository;
 
     public InterestResponse sendInterest(Long fromTeacherId, Long toTeacherId) {
         Teacher fromTeacher = teacherRepository.findById(fromTeacherId)
@@ -104,7 +109,7 @@ public class InterestService {
             notificationRepository.save(mutualNotification);
         }
 
-        return mapToInterestResponse(interest, fromTeacher, toTeacher, isMutual);
+        return mapToInterestResponse(interest, fromTeacher, toTeacher, isMutual, true);
     }
 
     public InterestResponse acceptInterest(Long interestId, Long teacherId) {
@@ -145,7 +150,7 @@ public class InterestService {
         Teacher fromTeacher = teacherRepository.findById(interest.getFromTeacherId()).orElse(null);
         Teacher toTeacher = teacherRepository.findById(interest.getToTeacherId()).orElse(null);
 
-        return mapToInterestResponse(interest, fromTeacher, toTeacher, true);
+        return mapToInterestResponse(interest, fromTeacher, toTeacher, true, false);
     }
 
     public InterestResponse rejectInterest(Long interestId, Long teacherId) {
@@ -169,7 +174,7 @@ public class InterestService {
         Teacher fromTeacher = teacherRepository.findById(interest.getFromTeacherId()).orElse(null);
         Teacher toTeacher = teacherRepository.findById(interest.getToTeacherId()).orElse(null);
 
-        return mapToInterestResponse(interest, fromTeacher, toTeacher, false);
+        return mapToInterestResponse(interest, fromTeacher, toTeacher, false, false);
     }
 
     @Transactional
@@ -207,7 +212,7 @@ public class InterestService {
                     Teacher fromTeacher = teacherRepository.findById(interest.getFromTeacherId()).orElse(null);
                     Teacher toTeacher = teacherRepository.findById(interest.getToTeacherId()).orElse(null);
                     boolean isMutual = interest.getStatus().equals(InterestStatus.ACCEPTED.getCode());
-                    return mapToInterestResponse(interest, fromTeacher, toTeacher, isMutual);
+                    return mapToInterestResponse(interest, fromTeacher, toTeacher, isMutual, true);
                 })
                 .collect(Collectors.toList());
     }
@@ -219,12 +224,12 @@ public class InterestService {
                     Teacher fromTeacher = teacherRepository.findById(interest.getFromTeacherId()).orElse(null);
                     Teacher toTeacher = teacherRepository.findById(interest.getToTeacherId()).orElse(null);
                     boolean isMutual = interest.getStatus().equals(InterestStatus.ACCEPTED.getCode());
-                    return mapToInterestResponse(interest, fromTeacher, toTeacher, isMutual);
+                    return mapToInterestResponse(interest, fromTeacher, toTeacher, isMutual, false);
                 })
                 .collect(Collectors.toList());
     }
 
-    private InterestResponse mapToInterestResponse(TransferInterest interest, Teacher fromTeacher, Teacher toTeacher, boolean isMutual) {
+    private InterestResponse mapToInterestResponse(TransferInterest interest, Teacher fromTeacher, Teacher toTeacher, boolean isMutual, boolean viewerIsSender) {
         InterestResponse response = new InterestResponse();
         response.setId(interest.getId());
         response.setFromTeacherId(interest.getFromTeacherId());
@@ -235,25 +240,56 @@ public class InterestService {
         response.setRespondedAt(interest.getRespondedAt());
 
         if (fromTeacher != null) {
+            response.setFromTeacherName(fromTeacher.getName());
+            response.setFromTeacherBlockName(resolveBlockName(fromTeacher));
             if (isMutual) {
-                response.setFromTeacherName(fromTeacher.getName());
                 response.setFromTeacherPhone(fromTeacher.getPhone());
                 response.setFromTeacherSchool(fromTeacher.getSchoolName());
-            } else {
-                response.setFromTeacherName(fromTeacher.getName());
             }
         }
 
         if (toTeacher != null) {
+            response.setToTeacherName(toTeacher.getName());
+            response.setToTeacherBlockName(resolveBlockName(toTeacher));
             if (isMutual) {
-                response.setToTeacherName(toTeacher.getName());
                 response.setToTeacherPhone(toTeacher.getPhone());
                 response.setToTeacherSchool(toTeacher.getSchoolName());
+            }
+        }
+
+        if (fromTeacher != null && toTeacher != null) {
+            if (viewerIsSender) {
+                response.setDistanceKm(haversineDistance(
+                    fromTeacher.getPreferredLat(), fromTeacher.getPreferredLng(),
+                    toTeacher.getCurrentLat(), toTeacher.getCurrentLng()
+                ));
             } else {
-                response.setToTeacherName(toTeacher.getName());
+                response.setDistanceKm(haversineDistance(
+                    toTeacher.getPreferredLat(), toTeacher.getPreferredLng(),
+                    fromTeacher.getCurrentLat(), fromTeacher.getCurrentLng()
+                ));
             }
         }
 
         return response;
+    }
+
+    private String resolveBlockName(Teacher teacher) {
+        if (teacher.getCurrentBlockId() == null) return "Unknown Block";
+        return blockRepository.findById(teacher.getCurrentBlockId())
+                .map(Block::getName)
+                .orElse("Block " + teacher.getCurrentBlockId());
+    }
+
+    private double haversineDistance(double lat1, double lng1, double lat2, double lng2) {
+        if (lat2 == 0 && lng2 == 0) return 0;
+        final double R = 6371.0;
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLng = Math.toRadians(lng2 - lng1);
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+                * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return Math.round(R * c * 10.0) / 10.0;
     }
 }

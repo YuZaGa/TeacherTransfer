@@ -15,7 +15,8 @@ import {
     ShieldCheck,
     Send,
     Phone,
-    School
+    School,
+    MapPin
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -144,11 +145,12 @@ export default function InterestsPage() {
                                                     <div className="absolute top-0 left-0 w-1.5 h-full bg-yellow-400" />
                                                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                                         <div className="flex items-center gap-4">
-                                                            <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-lg">
-                                                                {item.fromTeacherName ? item.fromTeacherName[0] : '?'}
+                                                            <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                                                                <MapPin className="w-6 h-6" />
                                                             </div>
                                                             <div>
-                                                                <h3 className="text-lg font-bold text-gray-900">{item.fromTeacherName || 'Teacher'}</h3>
+                                                                <h3 className="text-lg font-bold text-gray-900">Under {item.fromTeacherBlockName || 'Unknown'} Block</h3>
+                                                                <p className="text-sm text-gray-500">{item.distanceKm ? Math.round(item.distanceKm) + ' km away from your preferred location' : ''}</p>
                                                                 <span className="text-xs text-gray-400 flex items-center gap-1 mt-1">
                                                                     <Clock className="w-3 h-3" />
                                                                     {new Date(item.createdAt).toLocaleDateString()}
@@ -174,11 +176,12 @@ export default function InterestsPage() {
                                                     <div className="absolute top-0 left-0 w-1.5 h-full bg-red-500" />
                                                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                                         <div className="flex items-center gap-4">
-                                                            <div className="w-12 h-12 rounded-xl bg-gray-50 text-gray-500 flex items-center justify-center font-bold text-lg">
-                                                                {item.fromTeacherName ? item.fromTeacherName[0] : '?'}
+                                                            <div className="w-12 h-12 rounded-xl bg-gray-50 text-gray-500 flex items-center justify-center">
+                                                                <MapPin className="w-6 h-6" />
                                                             </div>
                                                             <div>
-                                                                <h3 className="text-lg font-bold text-gray-700">{item.fromTeacherName || 'Teacher'}</h3>
+                                                                <h3 className="text-lg font-bold text-gray-700">Under {item.fromTeacherBlockName || 'Unknown'} Block</h3>
+                                                                <p className="text-sm text-gray-500">{item.distanceKm ? Math.round(item.distanceKm) + ' km away from your preferred location' : ''}</p>
                                                                 <span className="text-xs text-gray-400 flex items-center gap-1 mt-1">
                                                                     <Clock className="w-3 h-3" />
                                                                     {new Date(item.createdAt).toLocaleDateString()}
@@ -197,11 +200,12 @@ export default function InterestsPage() {
                                                     <div className="absolute top-0 left-0 w-1.5 h-full bg-gray-400" />
                                                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                                         <div className="flex items-center gap-4">
-                                                            <div className="w-12 h-12 rounded-xl bg-gray-50 text-gray-500 flex items-center justify-center font-bold text-lg">
-                                                                {item.fromTeacherName ? item.fromTeacherName[0] : '?'}
+                                                            <div className="w-12 h-12 rounded-xl bg-gray-50 text-gray-500 flex items-center justify-center">
+                                                                <MapPin className="w-6 h-6" />
                                                             </div>
                                                             <div>
-                                                                <h3 className="text-lg font-bold text-gray-700">{item.fromTeacherName || 'Teacher'}</h3>
+                                                                <h3 className="text-lg font-bold text-gray-700">Under {item.fromTeacherBlockName || 'Unknown'} Block</h3>
+                                                                <p className="text-sm text-gray-500">{item.distanceKm ? Math.round(item.distanceKm) + ' km away from your preferred location' : ''}</p>
                                                                 <span className="text-xs text-gray-400 flex items-center gap-1 mt-1">
                                                                     <Clock className="w-3 h-3" />
                                                                     {new Date(item.createdAt).toLocaleDateString()}
@@ -229,6 +233,7 @@ export default function InterestsPage() {
                                                             </div>
                                                             <div>
                                                                 <h3 className="text-lg font-bold text-gray-900">{item.fromTeacherName || 'Teacher'}</h3>
+                                                                <p className="text-sm text-gray-500">Under {item.fromTeacherBlockName || 'Unknown'} Block &middot; {item.distanceKm ? Math.round(item.distanceKm) + ' km from your preferred location' : ''}</p>
                                                                 <span className="text-xs text-gray-400 flex items-center gap-1 mt-1">
                                                                     <Clock className="w-3 h-3" />
                                                                     {new Date(item.createdAt).toLocaleDateString()}
@@ -277,11 +282,12 @@ export default function InterestsPage() {
                                                     <div className="absolute top-0 left-0 w-1.5 h-full bg-yellow-400" />
                                                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                                         <div className="flex items-center gap-4">
-                                                            <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold text-lg">
-                                                                {item.toTeacherName ? item.toTeacherName[0] : '?'}
+                                                            <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
+                                                                <MapPin className="w-6 h-6" />
                                                             </div>
                                                             <div>
-                                                                <h3 className="text-lg font-bold text-gray-900">{item.toTeacherName || 'Teacher'}</h3>
+                                                                <h3 className="text-lg font-bold text-gray-900">Under {item.toTeacherBlockName || 'Unknown'} Block</h3>
+                                                                <p className="text-sm text-gray-500">{item.distanceKm ? Math.round(item.distanceKm) + ' km away from your preferred location' : ''}</p>
                                                                 <span className="text-xs text-gray-400 flex items-center gap-1 mt-1">
                                                                     <Clock className="w-3 h-3" />
                                                                     {new Date(item.createdAt).toLocaleDateString()}
@@ -305,11 +311,12 @@ export default function InterestsPage() {
                                                     <div className="absolute top-0 left-0 w-1.5 h-full bg-red-500" />
                                                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                                         <div className="flex items-center gap-4">
-                                                            <div className="w-12 h-12 rounded-xl bg-gray-50 text-gray-500 flex items-center justify-center font-bold text-lg">
-                                                                {item.toTeacherName ? item.toTeacherName[0] : '?'}
+                                                            <div className="w-12 h-12 rounded-xl bg-gray-50 text-gray-500 flex items-center justify-center">
+                                                                <MapPin className="w-6 h-6" />
                                                             </div>
                                                             <div>
-                                                                <h3 className="text-lg font-bold text-gray-700">{item.toTeacherName || 'Teacher'}</h3>
+                                                                <h3 className="text-lg font-bold text-gray-700">Under {item.toTeacherBlockName || 'Unknown'} Block</h3>
+                                                                <p className="text-sm text-gray-500">{item.distanceKm ? Math.round(item.distanceKm) + ' km away from your preferred location' : ''}</p>
                                                                 <span className="text-xs text-gray-400 flex items-center gap-1 mt-1">
                                                                     <Clock className="w-3 h-3" />
                                                                     {new Date(item.createdAt).toLocaleDateString()}
@@ -328,11 +335,12 @@ export default function InterestsPage() {
                                                     <div className="absolute top-0 left-0 w-1.5 h-full bg-gray-400" />
                                                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                                         <div className="flex items-center gap-4">
-                                                            <div className="w-12 h-12 rounded-xl bg-gray-50 text-gray-500 flex items-center justify-center font-bold text-lg">
-                                                                {item.toTeacherName ? item.toTeacherName[0] : '?'}
+                                                            <div className="w-12 h-12 rounded-xl bg-gray-50 text-gray-500 flex items-center justify-center">
+                                                                <MapPin className="w-6 h-6" />
                                                             </div>
                                                             <div>
-                                                                <h3 className="text-lg font-bold text-gray-700">{item.toTeacherName || 'Teacher'}</h3>
+                                                                <h3 className="text-lg font-bold text-gray-700">Under {item.toTeacherBlockName || 'Unknown'} Block</h3>
+                                                                <p className="text-sm text-gray-500">{item.distanceKm ? Math.round(item.distanceKm) + ' km away from your preferred location' : ''}</p>
                                                                 <span className="text-xs text-gray-400 flex items-center gap-1 mt-1">
                                                                     <Clock className="w-3 h-3" />
                                                                     {new Date(item.createdAt).toLocaleDateString()}
@@ -360,6 +368,7 @@ export default function InterestsPage() {
                                                             </div>
                                                             <div>
                                                                 <h3 className="text-lg font-bold text-gray-900">{item.toTeacherName || 'Teacher'}</h3>
+                                                                <p className="text-sm text-gray-500">Under {item.toTeacherBlockName || 'Unknown'} Block &middot; {item.distanceKm ? Math.round(item.distanceKm) + ' km from your preferred location' : ''}</p>
                                                                 <span className="text-xs text-gray-400 flex items-center gap-1 mt-1">
                                                                     <Clock className="w-3 h-3" />
                                                                     {new Date(item.createdAt).toLocaleDateString()}

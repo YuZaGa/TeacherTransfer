@@ -1,6 +1,7 @@
 package com.teachertransfer.service;
 
 import com.teachertransfer.dto.match.MatchResponse;
+import com.teachertransfer.entity.Block;
 import com.teachertransfer.entity.MatchResult;
 import com.teachertransfer.entity.Teacher;
 import com.teachertransfer.entity.TeacherGeoIndex;
@@ -9,6 +10,7 @@ import com.teachertransfer.enums.MatchType;
 import com.teachertransfer.enums.SchoolType;
 import com.teachertransfer.enums.Subject;
 import com.teachertransfer.enums.SubscriptionStatus;
+import com.teachertransfer.repository.BlockRepository;
 import com.teachertransfer.repository.MatchResultRepository;
 import com.teachertransfer.repository.TeacherGeoIndexRepository;
 import com.teachertransfer.repository.TeacherRepository;
@@ -38,6 +40,9 @@ public class MatchingService {
 
     @Autowired
     private TransferInterestRepository transferInterestRepository;
+
+    @Autowired
+    private BlockRepository blockRepository;
 
     @Value("${app.matching.max-results}")
     private Integer maxResults;
@@ -273,7 +278,7 @@ public class MatchingService {
         info.setDistanceKm(matchResult.getDistanceKm());
         info.setSubject(Subject.fromCode(matchedTeacher.getSubject()).getDisplayName());
         info.setSchoolType(SchoolType.fromCode(matchedTeacher.getSchoolType()).getDisplayName());
-        info.setApproxArea("Near " + resolveBlockName(matchedTeacher));
+        info.setApproxArea("Under " + resolveBlockName(matchedTeacher) + " Block");
 
         boolean isMutual = matchResult.getMatchType().equals(MatchType.MUTUAL.getCode());
         info.setIdentityRevealed(isMutual);
@@ -289,6 +294,9 @@ public class MatchingService {
     }
 
     private String resolveBlockName(Teacher teacher) {
-        return "Block " + teacher.getCurrentBlockId();
+        if (teacher.getCurrentBlockId() == null) return "Unknown Block";
+        return blockRepository.findById(teacher.getCurrentBlockId())
+                .map(Block::getName)
+                .orElse("Block " + teacher.getCurrentBlockId());
     }
 }
