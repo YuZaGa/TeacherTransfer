@@ -43,4 +43,12 @@ Thumbs.db
 # OS
 .DS_Store
 Thumbs.db
-.env.example
+
+# SSL certificates (self-generated, don't commit real certs)
+docker/nginx/ssl/
+
+# Stale artifact files
+docker/Backend:
+docker/Frontend:
+docker/User:
+docker/ZeptoMail:

@@ -44,7 +44,7 @@ export default function Home() {
                                     <UserPlus className="w-10 h-10 text-blue-600" />
                                 </div>
                                 <h3 className="text-xl font-bold text-gray-900 mb-2">1. Sign In</h3>
-                                <p className="text-gray-600">Sign in with your Google account and fill in your teacher details to get started.</p>
+                                <p className="text-gray-600">Sign in with your email and fill in your teacher details to get started.</p>
                             </div>
 
                             <div className="relative z-10 flex flex-col items-center text-center">

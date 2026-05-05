@@ -1,257 +1,209 @@
-# TeacherTransfer
+<p align="center">
+  <img src="frontend/public/favicon.svg" width="80" alt="TeacherTransfer logo" />
+</p>
 
-A peer-to-peer web platform enabling Bihar government school teachers to discover mutual, one-way, and multi-hop transfer opportunities.
+<h1 align="center">🏫 TeacherTransfer</h1>
+<p align="center">
+  <em>Find your perfect school transfer match — no paperwork, no bureaucracy, just teachers helping teachers.</em>
+</p>
 
-## Overview
+<p align="center">
+  <strong>Bihar · Government Schools · Mutual Transfers</strong>
+</p>
 
-TeacherTransfer helps government school teachers find transfer matches based on location, subject, and school type - without school or government involvement.
+---
 
-### Key Features
+TeacherTransfer is a peer-to-peer platform for Bihar government school teachers who want to swap postings. You tell us where you are, where you want to go, what subject you teach — and we find other teachers who match the other way around.
 
-- **Location-based matching** using geohash indexing
-- **Subject & school type filtering** for relevant matches
-- **Mutual, one-way, and multi-hop matching** support
-- **Paid-only model** with ₹39-₹99/month subscriptions
-- **Email notifications** for match alerts
-- **Bihar-focused** with all 38 districts and blocks
+Direct swap. No endless paperwork. Just a clean, map-powered platform that does the matching for you.
 
-## Tech Stack
+---
+
+## 📸 Screenshots
+
+<table align="center">
+  <tr>
+    <td align="center"><strong>Home Page</strong></td>
+    <td align="center"><strong>Dashboard — Overview</strong></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="screenshots/home1.png" width="380" alt="Landing page"></td>
+    <td align="center"><img src="screenshots/dashboard1.png" width="380" alt="Dashboard overview"></td>
+  </tr>
+  <tr>
+    <td align="center"><strong>Home Page (bottom)</strong></td>
+    <td align="center"><strong>Dashboard — Matches</strong></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="screenshots/home2.png" width="380" alt="Landing page bottom"></td>
+    <td align="center"><img src="screenshots/dashboard2.png" width="380" alt="Dashboard matches view"></td>
+  </tr>
+</table>
+
+---
+
+## ✨ What You Can Do
+
+- **📍 Location-based matching** — Tell us your preferred district & block, we find teachers in that area who want to go where *you* are now. Powered by geohash + Haversine distance.
+- **🔄 Mutual transfers** — Simple two-way swap.The algorithm figures it out.
+- **🎯 Filter by subject & school type** — Only show matches that actually make sense (a middle school Hindi teacher matches with another middle school Hindi teacher).
+- **🗺️ Interactive map** — See potential matches on a real map. Pan around Bihar, zoom into blocks.
+- **🔔 Get notified** — When someone sends interest, accepts your request, or a new match is found. Email notifications included.
+- **📱 Works on your phone** — No app to install. Open it in the browser on any device.
+- **🗄️ All 38 districts & 500+ blocks of Bihar** — Geography data built in.
+
+---
+
+## 🛠️ Tech Stack
 
 ### Backend
-- Java 17
-- Spring Boot 3
-- Spring Data JPA
-- Spring Security (JWT)
-- PostgreSQL 15
-- Razorpay (payments)
-- MSG91 (OTP)
-- SendGrid (email)
+
+| What | Thing |
+|------|-------|
+| Language | Java 17 |
+| Framework | Spring Boot 3.2 |
+| Database | PostgreSQL 15 + JPA/Hibernate |
+| Auth | JWT (jjwt),  Email OTP |
+| Spatial | Geohash (davidmoten/geo) + Haversine |
+| Payments | Razorpay |
+| Email | SMTP (SendGrid / Mailtrap / any SMTP) |
+| SMS | MSG91 (OTP delivery) |
 
 ### Frontend
-- Next.js 14 (App Router)
-- TypeScript
-- Tailwind CSS
-- Leaflet.js + OpenStreetMap
+
+| What | Thing |
+|------|-------|
+| Framework | Next.js 14 (App Router) |
+| Language | TypeScript |
+| Styling | Tailwind CSS |
+| Maps | Leaflet.js + OpenStreetMap |
+| Auth | NextAuth.js |
+| Icons | Lucide React |
 
 ### Infrastructure
-- Docker & Docker Compose
-- Nginx (reverse proxy)
-- Let's Encrypt (SSL)
 
-## Quick Start
+| What | Thing |
+|------|-------|
+| Containers | Docker + Docker Compose |
+| Reverse Proxy | Nginx (rate limiting, SSL termination) |
+| SSL | Let's Encrypt |
 
-### Prerequisites
+---
 
-- Docker & Docker Compose
-- Java 17 (for local development)
-- Node.js 18 (for local development)
+## 🚀 Getting Started
 
-### Environment Variables
+You'll need **Docker** and **Docker Compose** to run the full stack. Or run backend/frontend locally if you prefer.
 
-Copy `.env.example` to `.env` and configure:
+### 1. Clone it
+
+```bash
+git clone https://github.com/<your-org>/TeacherTransfer.git
+cd TeacherTransfer
+```
+
+### 2. Configure environment
 
 ```bash
 cp .env.example .env
 ```
 
-Required variables:
-- `DB_PASSWORD` - Database password
-- `JWT_SECRET` - JWT signing secret
-- `MSG91_AUTH_KEY` - MSG91 API key
-- `RAZORPAY_KEY_ID` - Razorpay key ID
-- `RAZORPAY_KEY_SECRET` - Razorpay key secret
-- `SENDGRID_API_KEY` - SendGrid API key
+Edit `.env` with your credentials. For local development, just set `EMAIL_PROVIDER=log` and leave the SMS/payment keys blank — the app will work without them (just no OTP or payments).
 
-### Running with Docker
+### 3. Fire it up with Docker
 
 ```bash
-docker-compose up -d
+docker compose -f docker/docker-compose.yml up -d
 ```
 
-Services:
-- API: http://localhost:8080/api
-- Frontend: http://localhost:3000
-- Database: localhost:5432
+That's it. The stack boots up in a minute:
 
-## Project Structure
+| Service | URL |
+|---------|-----|
+| Frontend | http://localhost:3000 |
+| API | http://localhost:8080/api |
+| Database | `localhost:5432` |
 
-```
-TeacherTransfer/
-├── backend/                 # Spring Boot application
-│   ├── src/
-│   │   ├── main/
-│   │   │   ├── java/com/teachertransfer/
-│   │   │   │   ├── entity/       # JPA entities
-│   │   │   │   ├── enums/       # Enumerations
-│   │   │   │   ├── repository/  # Data repositories
-│   │   │   │   ├── service/     # Business logic
-│   │   │   │   ├── controller/  # REST controllers
-│   │   │   │   └── dto/         # Data transfer objects
-│   │   │   └── resources/
-│   │   │       └── application.yml
-│   ├── pom.xml
-│   └── Dockerfile
-├── frontend/                # Next.js application
-│   ├── src/
-│   │   ├── app/          # App Router pages
-│   │   ├── components/    # Reusable components
-│   │   ├── lib/           # Utilities
-│   │   └── types/         # TypeScript types
-│   ├── package.json
-│   ├── next.config.js
-│   ├── tailwind.config.ts
-│   └── Dockerfile
-├── docker/                  # Docker configurations
-│   ├── docker-compose.yml
-│   ├── nginx.conf
-│   └── init.sql
-├── plans/                  # Architecture & planning docs
-└── README.md
-```
+### 4. Or run locally for development
 
-## API Documentation
-
-### Authentication
-
-```
-POST /api/auth/send-otp      # Send OTP to phone
-POST /api/auth/verify-otp     # Verify OTP
-POST /api/auth/register        # Register new teacher
-POST /api/auth/login           # Login with phone/password
-```
-
-### Profile
-
-```
-GET  /api/teacher/me          # Get current teacher profile
-PUT  /api/teacher/me          # Update teacher profile
-```
-
-### Matching
-
-```
-GET /api/matches               # Get ranked matches
-GET /api/matches/map          # Get matches for map (premium)
-```
-
-### Interest
-
-```
-POST   /api/interest/{teacherId}           # Send interest
-POST   /api/interest/{interestId}/accept    # Accept interest
-POST   /api/interest/{interestId}/reject    # Reject interest
-GET     /api/interest/sent                 # Get sent interests
-GET     /api/interest/received             # Get received interests
-```
-
-### Notifications
-
-```
-GET  /api/notifications         # Get notifications
-POST /api/notifications/{id}/read    # Mark as read
-POST /api/notifications/read-all    # Mark all as read
-```
-
-## Database Schema
-
-Key tables:
-- `teacher` - Teacher profiles
-- `teacher_geo_index` - Geospatial index for fast matching
-- `transfer_interest` - Interest/ping records
-- `notification` - User notifications
-- `match_result` - Cached match results
-- `district` - Bihar districts
-- `block` - Bihar blocks
-- `payment` - Payment transactions
-- `subscription_plan` - Subscription plans
-- `job_run` - Batch job tracking
-
-See [`plans/v1-specification-locked.md`](plans/v1-specification-locked.md) for complete schema.
-
-## Matching Algorithm
-
-The matching system uses:
-1. **Geohash indexing** - O(1) location lookup
-2. **Haversine formula** - Accurate Earth distance calculation
-3. **Batch processing** - Multi-hop matching every 12 hours
-
-See [`plans/matching-algorithm-explained.md`](plans/matching-algorithm-explained.md) for details.
-
-## Deployment
-
-### Production Deployment
-
-```bash
-# Build and start services
-docker-compose -f docker-compose.yml up -d
-
-# Setup SSL with certbot
-docker exec teacher-transfer-nginx certbot certonly --webroot -w /var/www/certbot -d teachertransfer.in
-
-# Restart nginx
-docker restart teacher-transfer-nginx
-```
-
-### Monitoring
-
-- Health check: `GET /api/actuator/health`
-- Logs: `docker-compose logs -f`
-
-## Cost Breakdown
-
-| Item | Monthly Cost |
-|------|-------------|
-| VPS (2 vCPU, 4GB) | ₹800 |
-| Domain | ₹70 |
-| SSL | ₹0 (Let's Encrypt) |
-| Maps | ₹0 (OpenStreetMap) |
-| Email | ₹0 (SendGrid free tier) |
-| SMS | ~₹150 (1000 OTPs) |
-| **Total** | **~₹1,020** |
-
-See [`plans/scaling-strategy.md`](plans/scaling-strategy.md) for scaling projections.
-
-## Development
-
-### Backend
-
+**Backend:**
 ```bash
 cd backend
 mvn clean install
 mvn spring-boot:run
 ```
 
-### Frontend
-
+**Frontend:**
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-## Testing
+The frontend will hot-reload at `http://localhost:3000` and proxy API calls to port `8080`.
 
-```bash
-# Backend tests
-cd backend
-mvn test
+### Dev mode bonus — MailHog
 
-# With Testcontainers
-mvn test -Dspring.profiles.active=testcontainers
+Spin up `docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml up -d` and you get [MailHog](http://localhost:8025) — a fake SMTP server that catches all outgoing emails so you can inspect them in a web UI. No need to configure real SMTP credentials.
+
+---
+
+## 📁 Project Layout
+
+```
+TeacherTransfer/
+├── backend/                         # Spring Boot API
+│   ├── src/main/java/com/teachertransfer/
+│   │   ├── controller/              # REST endpoints
+│   │   ├── service/                 # Business logic
+│   │   ├── entity/                  # JPA models
+│   │   ├── repository/              # Database access
+│   │   ├── security/                # JWT & Spring Security
+│   │   ├── dto/                     # Request/response shapes
+│   │   └── util/                    # Geohash utility
+│   └── pom.xml
+├── frontend/                        # Next.js app
+│   ├── app/                         # Pages (App Router)
+│   ├── components/                  # Reusable UI bits
+│   ├── lib/                         # Axios client, NextAuth config
+│   └── package.json
+├── docker/                          # Docker & Nginx configs
+│   ├── docker-compose.yml
+│   ├── docker-compose.dev.yml
+│   └── nginx/
+└── screenshots/                     # 📸 Your screenshots here
 ```
 
-## Documentation
+## 🧪 Testing
 
-- [`plans/architecture-plan.md`](plans/architecture-plan.md) - Technical architecture
-- [`plans/implementation-plan.md`](plans/implementation-plan.md) - Implementation roadmap
-- [`plans/matching-algorithm-explained.md`](plans/matching-algorithm-explained.md) - Matching algorithm deep dive
-- [`plans/v1-specification-locked.md`](plans/v1-specification-locked.md) - Locked V1 specification
-- [`plans/viability-analysis.md`](plans/viability-analysis.md) - Viability assessment
+```bash
+# Backend unit & integration tests
+cd backend && mvn test
 
-## License
+# With a real Postgres via Testcontainers
+cd backend && mvn test -Dspring.profiles.active=testcontainers
 
-Proprietary - All rights reserved
+# Frontend linting
+cd frontend && npm run lint
+```
 
-## Contact
+---
 
-For support or questions, contact: support@teachertransfer.in
+## 🚢 Deployment (production)
+
+```bash
+docker compose -f docker/docker-compose.yml up -d
+```
+
+Nginx handles SSL (Let's Encrypt), rate limiting (10 req/s general, 5 req/min on auth), and routes traffic to the right service. Health check at `/api/actuator/health`. Tail logs with `docker compose logs -f`.
+
+---
+
+## 📄 License
+
+Proprietary — all rights reserved. Built for Bihar government school teachers. Not affiliated with any government body.
+
+---
+
+## 💬 Questions?
+
+Open a GitHub issue or contact me.
